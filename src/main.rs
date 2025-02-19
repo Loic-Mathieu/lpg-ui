@@ -3,6 +3,7 @@ use image::{imageops::FilterType, DynamicImage, ImageBuffer, ImageFormat, Rgba};
 fn main() {
     let poster_template: DynamicImage = image::open("./posters_template.png").unwrap();
     let painting_template: DynamicImage = image::open("./painting_template.png").unwrap();
+    std::fs::create_dir_all("./input").unwrap();
     let p: Vec<DynamicImage> = std::fs::read_dir("./input")
         .unwrap()
         .flat_map(Result::ok)
