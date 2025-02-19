@@ -1,5 +1,11 @@
 use image::{imageops::FilterType, DynamicImage, ImageBuffer, ImageFormat, Rgba};
 
+pub mod crop_tool {
+    pub fn generate() {
+        println!("Generating Crop Tool");
+    }
+}
+
 fn main() {
     let poster_template: DynamicImage = image::open("../posters_template.png").unwrap();
     let painting_template: DynamicImage = image::open("../painting_template.png").unwrap();

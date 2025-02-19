@@ -1,6 +1,9 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+mod lpg;
+
 #[tauri::command]
 fn greet(name: &str) -> String {
+    lpg::crop_tool::generate();
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
