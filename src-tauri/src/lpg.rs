@@ -133,7 +133,7 @@ pub mod crop_tool {
         base
     }
 
-    fn g<'a>(input: &'a Vec<DynamicImage>, index: usize) -> &'a DynamicImage {
+    fn g(input: &Vec<DynamicImage>, index: usize) -> &DynamicImage {
         input.get(index % input.len()).unwrap()
     }
 }
