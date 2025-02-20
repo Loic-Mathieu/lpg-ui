@@ -22,25 +22,32 @@ pub mod crop_tool {
     const TIPS_PATH: &str = "LethalPosters\\tips";
     const PAINTINGS_PATH: &str = "LethalPaintings\\paintings";
 
+    #[derive(Eq, PartialEq)]
+    pub enum Modes {
+        Posters,
+        Paintings,
+    }
+
     pub struct CropParams {
         pub input: String,
         pub output: String,
         pub template: String,
-        // modes: Vec<String>,
-        pub do_generate_posters: bool,
-        pub do_generate_paintings: bool,
+        pub modes: Vec<Modes>,
     }
 
     pub async fn generate(params: &CropParams) {
+        // Pictures to transform
         let original_pictures = read_input_pictures(&params.input);
+
+        // Parallel generation
         let mut tasks = Vec::new();
 
-        if params.do_generate_posters {
+        if params.modes.contains(&Modes::Posters) {
             let task = generate_posters_task(&params.template, &params.output, original_pictures.clone());
             tasks.push(task);
         }
 
-        if params.do_generate_paintings {
+        if params.modes.contains(&Modes::Paintings) {
             let task = generate_paintings_task(&params.template, &params.output, original_pictures.clone());
             tasks.push(task);
         }

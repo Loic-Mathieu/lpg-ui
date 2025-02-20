@@ -1,14 +1,16 @@
+use crate::lpg::crop_tool::Modes::Posters;
+use crate::lpg::crop_tool::CropParams;
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 mod lpg;
 
 #[tauri::command]
 async fn greet(name: String) -> String {
-    let params = lpg::crop_tool::CropParams {
+    let params = CropParams{
         input: "./input".to_string(),
         output: "./output".to_string(),
         template: "./templates".to_string(),
-        do_generate_posters: true,
-        do_generate_paintings: true,
+        modes: vec![Posters],
     };
 
     println!("Generating picture...");
