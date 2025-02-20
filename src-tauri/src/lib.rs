@@ -7,6 +7,8 @@ fn greet(name: &str) -> String {
         input: "./input".to_string(),
         output: "./output".to_string(),
         template: "./templates".to_string(),
+        do_generate_posters: true,
+        do_generate_paintings: true,
     };
     lpg::crop_tool::generate(&params);
     format!("Hello, {}! You've been greeted from Rust!", name)

@@ -16,7 +16,6 @@ pub mod crop_tool {
     const PAINTING_TEMPLATE: &str = "painting_template.png";
 
     // Output paths
-    const PLUGIN_PATH: &str = "BepInEx\\plugins";
     const POSTERS_PATH: &str = "LethalPosters\\posters";
     const TIPS_PATH: &str = "LethalPosters\\tips";
     const PAINTINGS_PATH: &str = "LethalPaintings\\paintings";
@@ -26,6 +25,8 @@ pub mod crop_tool {
         pub output: String,
         pub template: String,
         // modes: Vec<String>,
+        pub do_generate_posters: bool,
+        pub do_generate_paintings: bool,
     }
 
     pub fn generate(params: &CropParams) {
@@ -37,32 +38,29 @@ pub mod crop_tool {
         let tips_dir = get_output_path(&params.output, TIPS_PATH);
         let paintings_dir = get_output_path(&params.output, PAINTINGS_PATH);
 
+        let pictures = read_input_pictures(&params.input);
 
-        let p = read_input_pictures(&params.input);
-
-        for i in 0..p.len() {
+        for i in 0..pictures.len() {
             let tag = format!("{i}.png");
 
-            generate_atlas(
-                &poster_template,
-                &[
-                    g(&p, i),
-                    g(&p, i + 1),
-                    g(&p, i + 2),
-                    g(&p, i + 3),
-                    g(&p, i + 4),
-                ],
-            )
-                .save_with_format(poster_dir.join(&tag).as_path(), ImageFormat::Png)
-                .unwrap();
+            if params.do_generate_posters {
+                let posters: Vec<&DynamicImage> = (0..5).map(|j| g(&pictures, i + j))
+                    .collect();
 
-            generate_tips(g(&p, i))
-                .save_with_format(tips_dir.join(&tag).as_path(), ImageFormat::Png)
-                .unwrap();
+                generate_atlas(&poster_template, &posters)
+                    .save_with_format(poster_dir.join(&tag).as_path(), ImageFormat::Png)
+                    .unwrap();
 
-            generate_painting(&painting_template, g(&p, i))
-                .save_with_format(paintings_dir.join(&tag).as_path(), ImageFormat::Png)
-                .unwrap();
+                generate_tips(g(&pictures, i))
+                    .save_with_format(tips_dir.join(&tag).as_path(), ImageFormat::Png)
+                    .unwrap();
+            }
+
+            if params.do_generate_paintings {
+                generate_painting(&painting_template, g(&pictures, i))
+                    .save_with_format(paintings_dir.join(&tag).as_path(), ImageFormat::Png)
+                    .unwrap();
+            }
 
             println!("{:?}", poster_dir.join(&tag).as_path());
             println!("{:?}", tips_dir.join(&tag).as_path());
@@ -78,7 +76,7 @@ pub mod crop_tool {
     }
 
     fn get_output_path(uri: &str, dir: &str) -> PathBuf {
-        let path = PathBuf::from(uri).join(PLUGIN_PATH).join(dir);
+        let path = PathBuf::from(uri).join(dir);
         std::fs::create_dir_all(&path).unwrap();
         path
     }
@@ -94,7 +92,7 @@ pub mod crop_tool {
             .collect()
     }
 
-    fn generate_atlas(template: &DynamicImage, posters: &[&DynamicImage; 5]) -> DynamicImage {
+    fn generate_atlas(template: &DynamicImage, posters: &Vec<&DynamicImage>) -> DynamicImage {
         let mut base = template.clone();
         for (i, o) in POSTER_OFFSETS.iter().enumerate() {
             let p = posters[i].resize(o[2], o[3], FilterType::Lanczos3);
