@@ -2,6 +2,7 @@ pub mod crop_tool {
     use std::path::{Path, PathBuf};
     use image::{DynamicImage, ImageBuffer, ImageFormat, Rgba};
     use image::imageops::FilterType;
+    use tauri::async_runtime;
 
     const POSTER_OFFSETS: &[&[u32; 4]; 5] = &[
         &[0, 0, 341, 559],
@@ -29,49 +30,56 @@ pub mod crop_tool {
         pub do_generate_paintings: bool,
     }
 
-    pub fn generate(params: &CropParams) {
-        println!("Generating picture...");
-
-        let painting_template = get_template(&params.template, PAINTING_TEMPLATE);
-        let poster_template = get_template(&params.template, POSTER_TEMPLATE);
-        let poster_dir = get_output_path(&params.output, POSTERS_PATH);
-        let tips_dir = get_output_path(&params.output, TIPS_PATH);
-        let paintings_dir = get_output_path(&params.output, PAINTINGS_PATH);
-
-        // println!("{:?}", poster_dir.join(&tag).as_path());
-        // println!("{:?}", tips_dir.join(&tag).as_path());
-        // println!("{:?}", paintings_dir.join(&tag).as_path());
-
-        // let mut tasks = Vec::new();
-        let pictures = read_input_pictures(&params.input);
+    pub async fn generate(params: &CropParams) {
+        let original_pictures = read_input_pictures(&params.input);
+        let mut tasks = Vec::new();
 
         if params.do_generate_posters {
-            for i in 0..pictures.len() {
-                let tag = format!("{i}.png");
+            let poster_template = get_template(&params.template, POSTER_TEMPLATE);
+            let poster_dir = get_output_path(&params.output, POSTERS_PATH);
+            let tips_dir = get_output_path(&params.output, TIPS_PATH);
 
-                let posters: Vec<&DynamicImage> = (0..5).map(|j| g(&pictures, i + j)).collect();
+            let pictures = original_pictures.clone();
 
-                generate_atlas(&poster_template, &posters)
-                    .save_with_format(poster_dir.join(&tag).as_path(), ImageFormat::Png)
-                    .unwrap();
+            let task = async_runtime::spawn_blocking(move || {
+                for i in 0..pictures.len() {
+                    let tag = format!("{i}.png");
 
-                generate_tips(g(&pictures, i))
-                    .save_with_format(tips_dir.join(&tag).as_path(), ImageFormat::Png)
-                    .unwrap();
-            }
+                    let posters: Vec<&DynamicImage> = (0..5).map(|j| g(&pictures, i + j)).collect();
+
+                    generate_atlas(&poster_template, &posters)
+                        .save_with_format(poster_dir.join(&tag).as_path(), ImageFormat::Png)
+                        .unwrap();
+
+                    generate_tips(g(&pictures, i))
+                        .save_with_format(tips_dir.join(&tag).as_path(), ImageFormat::Png)
+                        .unwrap();
+                }
+            });
+
+            tasks.push(task);
         }
 
         if params.do_generate_paintings {
-            for i in 0..pictures.len() {
-                let tag = format!("{i}.png");
+            let painting_template = get_template(&params.template, PAINTING_TEMPLATE);
+            let paintings_dir = get_output_path(&params.output, PAINTINGS_PATH);
 
-                generate_painting(&painting_template, g(&pictures, i))
-                    .save_with_format(paintings_dir.join(&tag).as_path(), ImageFormat::Png)
-                    .unwrap();
-            }
+            let pictures = original_pictures.clone();
+
+            let task = async_runtime::spawn_blocking(move || {
+                for i in 0..pictures.len() {
+                    let tag = format!("{i}.png");
+
+                    generate_painting(&painting_template, g(&pictures, i))
+                        .save_with_format(paintings_dir.join(&tag).as_path(), ImageFormat::Png)
+                        .unwrap();
+                }
+            });
+
+            tasks.push(task);
         }
 
-        println!("Generation complete !");
+        futures::future::join_all(tasks).await;
     }
 
     fn get_template(uri: &str, template: &str) -> DynamicImage {

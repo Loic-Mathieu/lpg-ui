@@ -2,7 +2,7 @@
 mod lpg;
 
 #[tauri::command]
-fn greet(name: &str) -> String {
+async fn greet(name: String) -> String {
     let params = lpg::crop_tool::CropParams {
         input: "./input".to_string(),
         output: "./output".to_string(),
@@ -10,7 +10,11 @@ fn greet(name: &str) -> String {
         do_generate_posters: true,
         do_generate_paintings: true,
     };
-    lpg::crop_tool::generate(&params);
+
+    println!("Generating picture...");
+    lpg::crop_tool::generate(&params).await;
+    println!("Generation complete !");
+
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
