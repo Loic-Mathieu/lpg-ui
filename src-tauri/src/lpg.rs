@@ -30,7 +30,7 @@ pub mod crop_tool {
     }
 
     pub fn generate(params: &CropParams) {
-        println!("Generating Crop Tool");
+        println!("Generating picture...");
 
         let painting_template = get_template(&params.template, PAINTING_TEMPLATE);
         let poster_template = get_template(&params.template, POSTER_TEMPLATE);
