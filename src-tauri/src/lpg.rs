@@ -14,8 +14,8 @@ pub mod crop_tool {
     ];
 
     // Templates
-    const POSTER_TEMPLATE: &str = "posters_template.png";
-    const PAINTING_TEMPLATE: &str = "painting_template.png";
+    pub const POSTER_TEMPLATE: &str = "templates\\posters_template.png";
+    pub const PAINTING_TEMPLATE: &str = "templates\\painting_template.png";
 
     // Output paths
     const POSTERS_PATH: &str = "LethalPosters\\posters";
@@ -31,7 +31,9 @@ pub mod crop_tool {
     pub struct CropParams {
         pub input: String,
         pub output: String,
-        pub template: String,
+        // pub template: String,
+        pub poster_template: PathBuf,
+        pub painting_template: PathBuf,
         pub modes: Vec<Modes>,
     }
 
@@ -43,12 +45,12 @@ pub mod crop_tool {
         let mut tasks = Vec::new();
 
         if params.modes.contains(&Modes::Posters) {
-            let task = generate_posters_task(&params.template, &params.output, original_pictures.clone());
+            let task = generate_posters_task(&params.poster_template, &params.output, original_pictures.clone());
             tasks.push(task);
         }
 
         if params.modes.contains(&Modes::Paintings) {
-            let task = generate_paintings_task(&params.template, &params.output, original_pictures.clone());
+            let task = generate_paintings_task(&params.painting_template, &params.output, original_pictures.clone());
             tasks.push(task);
         }
 
@@ -56,8 +58,8 @@ pub mod crop_tool {
     }
 
     /*  Getters */
-    fn get_template(uri: &str, template: &str) -> DynamicImage {
-        let path = Path::new(uri).join(template);
+    fn get_template(uri: &PathBuf, template: &str) -> DynamicImage {
+        let path = Path::new(uri);
         image::open(path).unwrap()
     }
 
@@ -79,7 +81,7 @@ pub mod crop_tool {
     }
 
     /*  Tasks   */
-    fn generate_posters_task(template: &String, output: &String, pictures: Vec<DynamicImage>) -> JoinHandle<()> {
+    fn generate_posters_task(template: &PathBuf, output: &String, pictures: Vec<DynamicImage>) -> JoinHandle<()> {
         let poster_template = get_template(template, POSTER_TEMPLATE);
         let poster_dir = get_output_path(output, POSTERS_PATH);
         let tips_dir = get_output_path(output, TIPS_PATH);
@@ -101,7 +103,7 @@ pub mod crop_tool {
         })
     }
 
-    fn generate_paintings_task(template: &String, output: &String, pictures: Vec<DynamicImage>) -> JoinHandle<()> {
+    fn generate_paintings_task(template: &PathBuf, output: &String, pictures: Vec<DynamicImage>) -> JoinHandle<()> {
         let painting_template = get_template(template, PAINTING_TEMPLATE);
         let paintings_dir = get_output_path(output, PAINTINGS_PATH);
 
