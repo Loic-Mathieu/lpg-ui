@@ -3,7 +3,12 @@ mod lpg;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
-    lpg::crop_tool::generate();
+    let params = lpg::crop_tool::CropParams {
+        input: "./input".to_string(),
+        output: "./output".to_string(),
+        template: "./templates".to_string(),
+    };
+    lpg::crop_tool::generate(&params);
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
