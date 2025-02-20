@@ -3,6 +3,7 @@ pub mod crop_tool {
     use image::{DynamicImage, ImageBuffer, ImageFormat, Rgba};
     use image::imageops::FilterType;
     use tauri::async_runtime;
+    use tauri::async_runtime::JoinHandle;
 
     const POSTER_OFFSETS: &[&[u32; 4]; 5] = &[
         &[0, 0, 341, 559],
@@ -35,53 +36,19 @@ pub mod crop_tool {
         let mut tasks = Vec::new();
 
         if params.do_generate_posters {
-            let poster_template = get_template(&params.template, POSTER_TEMPLATE);
-            let poster_dir = get_output_path(&params.output, POSTERS_PATH);
-            let tips_dir = get_output_path(&params.output, TIPS_PATH);
-
-            let pictures = original_pictures.clone();
-
-            let task = async_runtime::spawn_blocking(move || {
-                for i in 0..pictures.len() {
-                    let tag = format!("{i}.png");
-
-                    let posters: Vec<&DynamicImage> = (0..5).map(|j| g(&pictures, i + j)).collect();
-
-                    generate_atlas(&poster_template, &posters)
-                        .save_with_format(poster_dir.join(&tag).as_path(), ImageFormat::Png)
-                        .unwrap();
-
-                    generate_tips(g(&pictures, i))
-                        .save_with_format(tips_dir.join(&tag).as_path(), ImageFormat::Png)
-                        .unwrap();
-                }
-            });
-
+            let task = generate_posters_task(&params.template, &params.output, original_pictures.clone());
             tasks.push(task);
         }
 
         if params.do_generate_paintings {
-            let painting_template = get_template(&params.template, PAINTING_TEMPLATE);
-            let paintings_dir = get_output_path(&params.output, PAINTINGS_PATH);
-
-            let pictures = original_pictures.clone();
-
-            let task = async_runtime::spawn_blocking(move || {
-                for i in 0..pictures.len() {
-                    let tag = format!("{i}.png");
-
-                    generate_painting(&painting_template, g(&pictures, i))
-                        .save_with_format(paintings_dir.join(&tag).as_path(), ImageFormat::Png)
-                        .unwrap();
-                }
-            });
-
+            let task = generate_paintings_task(&params.template, &params.output, original_pictures.clone());
             tasks.push(task);
         }
 
         futures::future::join_all(tasks).await;
     }
 
+    /*  Getters */
     fn get_template(uri: &str, template: &str) -> DynamicImage {
         let path = Path::new(uri).join(template);
         image::open(path).unwrap()
@@ -104,6 +71,45 @@ pub mod crop_tool {
             .collect()
     }
 
+    /*  Tasks   */
+    fn generate_posters_task(template: &String, output: &String, pictures: Vec<DynamicImage>) -> JoinHandle<()> {
+        let poster_template = get_template(template, POSTER_TEMPLATE);
+        let poster_dir = get_output_path(output, POSTERS_PATH);
+        let tips_dir = get_output_path(output, TIPS_PATH);
+
+        async_runtime::spawn_blocking(move || {
+            for i in 0..pictures.len() {
+                let tag = format!("{i}.png");
+
+                let posters: Vec<&DynamicImage> = (0..5).map(|j| g(&pictures, i + j)).collect();
+
+                generate_atlas(&poster_template, &posters)
+                    .save_with_format(poster_dir.join(&tag).as_path(), ImageFormat::Png)
+                    .unwrap();
+
+                generate_tips(g(&pictures, i))
+                    .save_with_format(tips_dir.join(&tag).as_path(), ImageFormat::Png)
+                    .unwrap();
+            }
+        })
+    }
+
+    fn generate_paintings_task(template: &String, output: &String, pictures: Vec<DynamicImage>) -> JoinHandle<()> {
+        let painting_template = get_template(template, PAINTING_TEMPLATE);
+        let paintings_dir = get_output_path(output, PAINTINGS_PATH);
+
+        async_runtime::spawn_blocking(move || {
+            for i in 0..pictures.len() {
+                let tag = format!("{i}.png");
+
+                generate_painting(&painting_template, g(&pictures, i))
+                    .save_with_format(paintings_dir.join(&tag).as_path(), ImageFormat::Png)
+                    .unwrap();
+            }
+        })
+    }
+
+    /*  Generators  */
     fn generate_atlas(template: &DynamicImage, posters: &Vec<&DynamicImage>) -> DynamicImage {
         let mut base = template.clone();
         for (i, o) in POSTER_OFFSETS.iter().enumerate() {
