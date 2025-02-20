@@ -38,14 +38,18 @@ pub mod crop_tool {
         let tips_dir = get_output_path(&params.output, TIPS_PATH);
         let paintings_dir = get_output_path(&params.output, PAINTINGS_PATH);
 
+        // println!("{:?}", poster_dir.join(&tag).as_path());
+        // println!("{:?}", tips_dir.join(&tag).as_path());
+        // println!("{:?}", paintings_dir.join(&tag).as_path());
+
+        // let mut tasks = Vec::new();
         let pictures = read_input_pictures(&params.input);
 
-        for i in 0..pictures.len() {
-            let tag = format!("{i}.png");
+        if params.do_generate_posters {
+            for i in 0..pictures.len() {
+                let tag = format!("{i}.png");
 
-            if params.do_generate_posters {
-                let posters: Vec<&DynamicImage> = (0..5).map(|j| g(&pictures, i + j))
-                    .collect();
+                let posters: Vec<&DynamicImage> = (0..5).map(|j| g(&pictures, i + j)).collect();
 
                 generate_atlas(&poster_template, &posters)
                     .save_with_format(poster_dir.join(&tag).as_path(), ImageFormat::Png)
@@ -55,16 +59,16 @@ pub mod crop_tool {
                     .save_with_format(tips_dir.join(&tag).as_path(), ImageFormat::Png)
                     .unwrap();
             }
+        }
 
-            if params.do_generate_paintings {
+        if params.do_generate_paintings {
+            for i in 0..pictures.len() {
+                let tag = format!("{i}.png");
+
                 generate_painting(&painting_template, g(&pictures, i))
                     .save_with_format(paintings_dir.join(&tag).as_path(), ImageFormat::Png)
                     .unwrap();
             }
-
-            println!("{:?}", poster_dir.join(&tag).as_path());
-            println!("{:?}", tips_dir.join(&tag).as_path());
-            println!("{:?}", paintings_dir.join(&tag).as_path());
         }
 
         println!("Generation complete !");
