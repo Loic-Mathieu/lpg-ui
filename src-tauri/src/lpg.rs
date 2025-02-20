@@ -16,10 +16,10 @@ pub mod crop_tool {
     const PAINTING_TEMPLATE: &str = "painting_template.png";
 
     // Output paths
-    const PLUGIN_PATH: &str = "BepInEx/plugins";
-    const POSTERS_PATH: &str = "LethalPosters/posters";
-    const TIPS_PATH: &str = "LethalPosters/tips";
-    const PAINTINGS_PATH: &str = "LethalPaintings/paintings";
+    const PLUGIN_PATH: &str = "BepInEx\\plugins";
+    const POSTERS_PATH: &str = "LethalPosters\\posters";
+    const TIPS_PATH: &str = "LethalPosters\\tips";
+    const PAINTINGS_PATH: &str = "LethalPaintings\\paintings";
 
     pub struct CropParams {
         pub input: String,
@@ -74,14 +74,12 @@ pub mod crop_tool {
 
     fn get_template(uri: &str, template: &str) -> DynamicImage {
         let path = Path::new(uri).join(template);
-        println!("Reading template {}", path.display());
         image::open(path).unwrap()
     }
 
     fn get_output_path(uri: &str, dir: &str) -> PathBuf {
         let path = PathBuf::from(uri).join(PLUGIN_PATH).join(dir);
         std::fs::create_dir_all(&path).unwrap();
-        println!("Reading output {}", path.display());
         path
     }
 
