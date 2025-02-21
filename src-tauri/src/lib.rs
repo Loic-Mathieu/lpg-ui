@@ -1,25 +1,26 @@
+use std::path::{Path, PathBuf};
 use tauri::Manager;
 use tauri::path::BaseDirectory;
 use crate::lpg::crop_tool::Modes::Posters;
 use crate::lpg::crop_tool::CropParams;
+use crate::lpg::crop_tool::TEMPLATE_DIR;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 mod lpg;
 
+fn load_resource(handle: &tauri::AppHandle, resource: &str) -> tauri::Result<PathBuf> {
+    let path = Path::new("resources").join(resource);
+    handle.path().resolve(path, BaseDirectory::Resource)
+}
+
 #[tauri::command]
 async fn greet(handle: tauri::AppHandle, name: String) -> String {
-    let p = handle.path().resolve("resources\\templates\\posters_template.png", BaseDirectory::Resource).unwrap();
-    let p2 = handle.path().resolve("resources\\templates\\posters_template.png", BaseDirectory::Resource).unwrap();
-    let p3 = handle.path().resolve("resources\\templates", BaseDirectory::Resource).unwrap();
-
-    println!("Hello, {:?}!", p3);
+    let template_dir = load_resource(&handle, TEMPLATE_DIR).unwrap();
 
     let params = CropParams{
         input: "./input".to_string(),
         output: "./output".to_string(),
-        // template: "./templates".to_string(),
-        poster_template: p,
-        painting_template: p2,
+        template_dir,
         modes: vec![Posters],
     };
 

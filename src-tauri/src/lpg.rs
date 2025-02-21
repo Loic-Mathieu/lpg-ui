@@ -14,8 +14,9 @@ pub mod crop_tool {
     ];
 
     // Templates
-    pub const POSTER_TEMPLATE: &str = "templates\\posters_template.png";
-    pub const PAINTING_TEMPLATE: &str = "templates\\painting_template.png";
+    pub const TEMPLATE_DIR: &str = "templates";
+    const POSTER_TEMPLATE: &str = "posters_template.png";
+    const PAINTING_TEMPLATE: &str = "painting_template.png";
 
     // Output paths
     const POSTERS_PATH: &str = "LethalPosters\\posters";
@@ -31,9 +32,7 @@ pub mod crop_tool {
     pub struct CropParams {
         pub input: String,
         pub output: String,
-        // pub template: String,
-        pub poster_template: PathBuf,
-        pub painting_template: PathBuf,
+        pub template_dir: PathBuf,
         pub modes: Vec<Modes>,
     }
 
@@ -45,12 +44,12 @@ pub mod crop_tool {
         let mut tasks = Vec::new();
 
         if params.modes.contains(&Modes::Posters) {
-            let task = generate_posters_task(&params.poster_template, &params.output, original_pictures.clone());
+            let task = generate_posters_task(&params.template_dir, &params.output, original_pictures.clone());
             tasks.push(task);
         }
 
         if params.modes.contains(&Modes::Paintings) {
-            let task = generate_paintings_task(&params.painting_template, &params.output, original_pictures.clone());
+            let task = generate_paintings_task(&params.template_dir, &params.output, original_pictures.clone());
             tasks.push(task);
         }
 
@@ -59,7 +58,7 @@ pub mod crop_tool {
 
     /*  Getters */
     fn get_template(uri: &PathBuf, template: &str) -> DynamicImage {
-        let path = Path::new(uri);
+        let path = Path::new(uri).join(template);
         image::open(path).unwrap()
     }
 
