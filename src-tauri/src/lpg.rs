@@ -145,3 +145,19 @@ pub mod crop_tool {
         input.get(index % input.len()).unwrap()
     }
 }
+
+pub mod package_tool {
+    use std::path::PathBuf;
+
+    pub async fn read_metadata(uri: PathBuf, package_name: &str) {
+        // TODO implement
+    }
+
+    pub async fn create(uri: PathBuf, package_name: &str) {
+        // TODO implement
+    }
+
+    pub async fn load(uri: PathBuf, package_name: &str) {
+        // TODO implement
+    }
+}
