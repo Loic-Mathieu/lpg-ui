@@ -151,7 +151,6 @@ pub mod package_tool {
     use std::io::{Read, Write};
     use std::path::PathBuf;
     use walkdir::WalkDir;
-    use zip::CompressionMethod;
     use zip::write::SimpleFileOptions;
 
     pub async fn read_metadata(uri: PathBuf, package_name: &str) {
@@ -165,8 +164,7 @@ pub mod package_tool {
         let to_file = File::create(to_path.clone()).unwrap();
         let mut zip = zip::ZipWriter::new(to_file);
 
-        let options = SimpleFileOptions::default()
-            .compression_method(CompressionMethod::Bzip2);
+        let options = SimpleFileOptions::default();
 
         let iter = WalkDir::new(&from_dir).into_iter().map(|res| res.unwrap());
         for entry in iter {
