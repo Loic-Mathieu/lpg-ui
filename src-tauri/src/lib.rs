@@ -18,16 +18,23 @@ async fn greet(handle: tauri::AppHandle, name: String) -> String {
     let template_dir = load_resource(&handle, TEMPLATE_DIR).unwrap();
     let output_dir = PathBuf::from("output"); // TODO this should be parameterizable
 
+    // Generation
+    println!("Generating picture...");
     let params = CropParams{
         input: "./input".to_string(),
-        output_dir,
+        output_dir: output_dir.clone(),
         template_dir,
         modes: vec![Modes::Posters],
     };
 
-    println!("Generating picture...");
-    lpg::crop_tool::generate(&params).await;
+    // lpg::crop_tool::generate(&params).await;
     println!("Generation complete !");
+
+    // Packaging
+    println!("Packaging...");
+    let zip_dir = PathBuf::from("zip_output");
+    lpg::package_tool::create(output_dir.clone(), zip_dir, &name).await;
+    println!("Packaging complete !");
 
     format!("Hello, {}! You've been greeted from Rust!", name)
 }

@@ -147,14 +147,45 @@ pub mod crop_tool {
 }
 
 pub mod package_tool {
+    use std::fs::File;
+    use std::io::{Read, Write};
     use std::path::PathBuf;
+    use walkdir::WalkDir;
+    use zip::CompressionMethod;
+    use zip::write::SimpleFileOptions;
 
     pub async fn read_metadata(uri: PathBuf, package_name: &str) {
         // TODO implement
     }
 
-    pub async fn create(uri: PathBuf, package_name: &str) {
-        // TODO implement
+    pub async fn create(from_dir: PathBuf, uri: PathBuf, package_name: &str) {
+        std::fs::create_dir_all(uri.clone()).unwrap();
+        let package = format!("{package_name}.zip");
+        let to_path = uri.join(package);
+        let to_file = File::create(to_path.clone()).unwrap();
+        let mut zip = zip::ZipWriter::new(to_file);
+
+        let options = SimpleFileOptions::default()
+            .compression_method(CompressionMethod::Bzip2);
+
+        let iter = WalkDir::new(&from_dir).into_iter().map(|res| res.unwrap());
+        for entry in iter {
+            let path = entry.path();
+            if path.is_dir() {
+                continue; // skip dir
+            }
+
+            let relative_path = path.strip_prefix(&from_dir).unwrap().to_owned();
+            zip.start_file(relative_path.to_string_lossy().replace("\\", "/"), options).unwrap();
+
+            let mut file = File::open(path).unwrap();
+            let mut buffer = Vec::new();
+
+            file.read_to_end(&mut buffer).unwrap();
+            zip.write_all(&buffer).unwrap();
+        }
+
+        zip.finish().unwrap();
     }
 
     pub async fn load(uri: PathBuf, package_name: &str) {
