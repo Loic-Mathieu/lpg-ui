@@ -1,5 +1,5 @@
 pub mod crop_tool {
-    use std::path::{Path, PathBuf};
+    use std::path::PathBuf;
     use image::{DynamicImage, ImageBuffer, ImageFormat, Rgba};
     use image::imageops::FilterType;
     use tauri::async_runtime;
@@ -31,7 +31,7 @@ pub mod crop_tool {
 
     pub struct CropParams {
         pub input: String,
-        pub output: String,
+        pub output_dir: PathBuf,
         pub template_dir: PathBuf,
         pub modes: Vec<Modes>,
     }
@@ -44,12 +44,12 @@ pub mod crop_tool {
         let mut tasks = Vec::new();
 
         if params.modes.contains(&Modes::Posters) {
-            let task = generate_posters_task(&params.template_dir, &params.output, original_pictures.clone());
+            let task = generate_posters_task(&params.template_dir, &params.output_dir, original_pictures.clone());
             tasks.push(task);
         }
 
         if params.modes.contains(&Modes::Paintings) {
-            let task = generate_paintings_task(&params.template_dir, &params.output, original_pictures.clone());
+            let task = generate_paintings_task(&params.template_dir, &params.output_dir, original_pictures.clone());
             tasks.push(task);
         }
 
@@ -58,11 +58,11 @@ pub mod crop_tool {
 
     /*  Getters */
     fn get_template(uri: &PathBuf, template: &str) -> DynamicImage {
-        let path = Path::new(uri).join(template);
+        let path = PathBuf::from(uri).join(template);
         image::open(path).unwrap()
     }
 
-    fn get_output_path(uri: &str, dir: &str) -> PathBuf {
+    fn get_output_path(uri: &PathBuf, dir: &str) -> PathBuf {
         let path = PathBuf::from(uri).join(dir);
         std::fs::create_dir_all(&path).unwrap();
         path
@@ -80,7 +80,7 @@ pub mod crop_tool {
     }
 
     /*  Tasks   */
-    fn generate_posters_task(template: &PathBuf, output: &String, pictures: Vec<DynamicImage>) -> JoinHandle<()> {
+    fn generate_posters_task(template: &PathBuf, output: &PathBuf, pictures: Vec<DynamicImage>) -> JoinHandle<()> {
         let poster_template = get_template(template, POSTER_TEMPLATE);
         let poster_dir = get_output_path(output, POSTERS_PATH);
         let tips_dir = get_output_path(output, TIPS_PATH);
@@ -102,7 +102,7 @@ pub mod crop_tool {
         })
     }
 
-    fn generate_paintings_task(template: &PathBuf, output: &String, pictures: Vec<DynamicImage>) -> JoinHandle<()> {
+    fn generate_paintings_task(template: &PathBuf, output: &PathBuf, pictures: Vec<DynamicImage>) -> JoinHandle<()> {
         let painting_template = get_template(template, PAINTING_TEMPLATE);
         let paintings_dir = get_output_path(output, PAINTINGS_PATH);
 
