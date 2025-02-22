@@ -1,9 +1,8 @@
-use std::env::temp_dir;
+use crate::lpg::crop_tool::{CropParams, Modes, TEMPLATE_DIR};
 use std::path::PathBuf;
-use tauri::Manager;
 use tauri::path::BaseDirectory;
+use tauri::Manager;
 use tempfile::TempDir;
-use crate::lpg::crop_tool::{TEMPLATE_DIR, CropParams, Modes};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 
@@ -24,7 +23,7 @@ async fn greet(handle: tauri::AppHandle, name: String) -> String {
 
     // Generation
     println!("Generating pictures...");
-    let params = CropParams{
+    let params = CropParams {
         input: "./input".to_string(),
         output_dir: temp_path.clone(),
         template_dir,
@@ -48,6 +47,8 @@ async fn greet(handle: tauri::AppHandle, name: String) -> String {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![greet])
         .run(tauri::generate_context!())
