@@ -1,4 +1,5 @@
 pub mod crop_tool {
+    use strum_macros::{EnumString};
     use image::imageops::FilterType;
     use image::{DynamicImage, ImageBuffer, ImageFormat, Rgba};
     use std::path::PathBuf;
@@ -23,10 +24,11 @@ pub mod crop_tool {
     const TIPS_PATH: &str = "LethalPosters\\tips";
     const PAINTINGS_PATH: &str = "LethalPaintings\\paintings";
 
-    #[derive(Eq, PartialEq)]
+    // TODO maybe implement enum string if strum is not used elsewhere
+    #[derive(Eq, PartialEq, EnumString)]
     pub enum Modes {
-        Posters,
-        Paintings,
+        POSTERS,
+        PAINTINGS,
     }
 
     pub struct CropParams {
@@ -43,7 +45,7 @@ pub mod crop_tool {
         // Parallel generation
         let mut tasks = Vec::new();
 
-        if params.modes.contains(&Modes::Posters) {
+        if params.modes.contains(&Modes::POSTERS) {
             let task = generate_posters_task(
                 &params.template_dir,
                 &params.output_dir,
@@ -52,7 +54,7 @@ pub mod crop_tool {
             tasks.push(task);
         }
 
-        if params.modes.contains(&Modes::Paintings) {
+        if params.modes.contains(&Modes::PAINTINGS) {
             let task = generate_paintings_task(
                 &params.template_dir,
                 &params.output_dir,
@@ -171,6 +173,7 @@ pub mod package_tool {
 
     pub async fn read_metadata(uri: PathBuf, package_name: &str) {
         // TODO implement
+        println!("Loading package {} > {}", uri.display(), package_name);
     }
 
     pub async fn create(from_dir: PathBuf, uri: PathBuf, package_name: &str) {
@@ -205,5 +208,6 @@ pub mod package_tool {
 
     pub async fn load(uri: PathBuf, package_name: &str) {
         // TODO implement
+        println!("Loading package {} > {}", uri.display(), package_name);
     }
 }

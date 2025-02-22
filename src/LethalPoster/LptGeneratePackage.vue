@@ -4,7 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 interface Data {
   packageName: string;
-  files: any[];
+  files: string[];
   modes: string[];
 }
 
@@ -30,8 +30,7 @@ async function submit () {
 
   if (valid) {
     // TODO validation and error handling
-    const response = await invoke<{message: string}>("generate", formData.value);
-    console.log(response);
+    await invoke("generate", formData.value);
     form.value.resetValidation();
   }
 }
@@ -42,7 +41,6 @@ async function submit () {
     <v-form ref="form" @submit.prevent="submit">
       <div>
         <v-file-input
-            v-model="formData.files"
             accept="image/*"
             label="Input pictures"
             prepend-icon="mdi-image"
@@ -63,7 +61,7 @@ async function submit () {
               v-model="formData.modes"
               color="primary"
               label="Generate posters"
-              value="poster"
+              value="posters"
               :rules="[(values: string[]) => validateModes(values)]"
               hide-details
           ></v-switch>
@@ -71,7 +69,7 @@ async function submit () {
               v-model="formData.modes"
               color="primary"
               label="Generate paintings"
-              value="painting"
+              value="paintings"
               :rules="[(values: string[]) => validateModes(values)]"
           ></v-switch>
         </v-container>

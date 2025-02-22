@@ -29,4 +29,6 @@ walkdir = "2.5.0"
 tempfile = "3.17.1"
 tauri-plugin-dialog = "2"
 tauri-plugin-store = "2"
+strum = "0.27.1"
+strum_macros = "0.27.1"
 
