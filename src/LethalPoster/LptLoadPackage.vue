@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {ref} from "vue";
-import { readDir, BaseDirectory } from '@tauri-apps/plugin-fs';
+import {readDir, watch, remove} from '@tauri-apps/plugin-fs';
 
 // Todo get from store
 const PATH = 'D:\\work\\lpg-ui\\src-tauri\\output';
@@ -15,14 +15,26 @@ const isModFolderSet = ref(true);
 
 const packages = ref<Package[]>([]);
 
-readDir(PATH, { baseDir: BaseDirectory.AppLocalData }).then((entries) => {
-  entries.forEach((entry) => {
-    packages.value.push({
-      title: entry.name,
-      created: '23/02/2030'
+function loadDir() {
+  readDir(PATH).then((entries) => {
+    // Clear
+    packages.value = [];
+
+    // Populate
+    entries.forEach((entry) => {
+      packages.value.push({
+        title: entry.name,
+        created: '23/02/2030',
+      });
     });
   });
-});
+}
+
+function deletePackage(name: string) {
+  remove(`${PATH}\\${name}`).then(() => loadDir());
+}
+
+watch(PATH, () => loadDir()).then(() => loadDir());
 </script>
 
 <template>
@@ -59,7 +71,13 @@ readDir(PATH, { baseDir: BaseDirectory.AppLocalData }).then((entries) => {
                 </v-tooltip>
                 <v-tooltip location="top" text="Delete">
                   <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" variant="plain" class="ml-1" icon="mdi-delete" color="error"></v-btn>
+                    <v-btn v-bind="props"
+                           @click="deletePackage(pkg.raw.title)"
+                           variant="plain"
+                           class="ml-1"
+                           icon="mdi-delete"
+                           color="error"
+                    ></v-btn>
                   </template>
                 </v-tooltip>
               </template>
