@@ -22,6 +22,10 @@
     {
       "identifier": "fs:allow-remove",
       "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-copy-file",
+      "allow": [{ "path": "**" }]
     }
   ]
 }

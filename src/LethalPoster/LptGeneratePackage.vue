@@ -2,11 +2,9 @@
 import {computed, ref} from "vue";
 import {invoke} from "@tauri-apps/api/core";
 import { open } from '@tauri-apps/plugin-dialog';
+import {PathData, getPathData, filters} from "../utils/fileUtils.ts";
 
-interface ListedFile {
-  name: string;
-  uri: string;
-  path: string;
+interface ListedFile extends PathData {
   poster: boolean;
   painting: boolean;
 }
@@ -32,24 +30,15 @@ function addFiles() {
   open({
     multiple: true,
     directory: false,
-    filters: [{
-      name: 'Image',
-      extensions: ['png', 'jpg', 'jpeg']
-    }]
+    filters: filters.Pictures
   }).then((files: string[] | null) => {
     if (!files) {
       return;
     }
 
     files.forEach((path: string) => {
-      const fullUri = path.split('\\');
-      const name = fullUri.pop() ?? 'img';
-      const uri = fullUri.join('\\');
-
       formData.value.files.set(path, {
-        name,
-        uri,
-        path,
+        ...getPathData(path),
         poster: true,
         painting: true
       });
