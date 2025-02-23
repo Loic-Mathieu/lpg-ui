@@ -111,7 +111,11 @@ async function submit() {
                 </v-btn>
                 <v-input class="ml-2" :rules="[() => validateFiles()]"></v-input>
                 <v-spacer></v-spacer>
-                <v-btn color="secondary" @click="removeAllFiles">Clear</v-btn>
+                <v-tooltip location="top" text="Remove all items">
+                  <template v-slot:activator="{ props }">
+                    <v-btn v-bind="props" color="secondary" @click="removeAllFiles">Clear</v-btn>
+                  </template>
+                </v-tooltip>
               </v-toolbar>
             </template>
 
@@ -141,14 +145,19 @@ async function submit() {
                           hide-details
                       ></v-switch>
                       <v-divider class="ml-4" vertical></v-divider>
-                      <v-btn
-                          @click="removeFile(item.raw.path)"
-                          class="ml-3"
-                          variant="text"
-                          density="compact"
-                          color="error"
-                          icon="mdi-close"
-                      ></v-btn>
+                      <v-tooltip location="top" text="Remove">
+                        <template v-slot:activator="{ props }">
+                          <v-btn
+                              @click="removeFile(item.raw.path)"
+                              v-bind="props"
+                              class="ml-3"
+                              variant="text"
+                              density="compact"
+                              color="error"
+                              icon="mdi-close"
+                          ></v-btn>
+                        </template>
+                      </v-tooltip>
                     </template>
                   </v-list-item>
                   <v-divider v-if="i < items.length - 1" class="ma-1"></v-divider>
