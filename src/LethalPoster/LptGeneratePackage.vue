@@ -1,36 +1,109 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { invoke } from "@tauri-apps/api/core";
+import {computed, ref} from "vue";
+import {invoke} from "@tauri-apps/api/core";
+import { open } from '@tauri-apps/plugin-dialog';
+
+interface ListedFile {
+  name: string;
+  uri: string;
+  path: string;
+  poster: boolean;
+  painting: boolean;
+}
 
 interface Data {
   packageName: string;
-  files: string[];
-  modes: string[];
+  files: Map<string, ListedFile>;
 }
 
 const form = ref();
 const formData = ref<Data>({
-  packageName: 'TEMP',
-  files: [],
-  modes: []
+  packageName: '',
+  files: new Map<string, ListedFile>([]),
 });
 
-function validateModes(value: string[]): boolean | string {
+const fileList = computed<ListedFile[]>(() => {
+  return [...formData.value.files.values()];
+});
+
+function addFiles() {
+  form.value.resetValidation();
+
+  /*
+  const files = [
+    'C:\\Users\\loicm\\OneDrive\\Pictures\\dewle8t-e263df82-71e6-4192-9b43-40c3ce270e72.png',
+    'C:\\Users\\loicm\\OneDrive\\Pictures\\F0jMyx2XwAAbAKp.jpg',
+    'C:\\Users\\loicm\\OneDrive\\Pictures\\F0dJbkxWIAgWpL0.jpg'
+  ];
+  * */
+
+  open({
+    multiple: true,
+    directory: false,
+    filters: [{
+      name: 'Image',
+      extensions: ['png', 'jpg', 'jpeg']
+    }]
+  }).then((files: string[] | null) => {
+    if (!files) {
+      return;
+    }
+
+    console.log(files)
+
+    files.forEach((path: string) => {
+      const fullUri = path.split('\\');
+      const name = fullUri.pop() ?? 'img';
+      const uri = fullUri.join('\\');
+
+      formData.value.files.set(path, {
+        name,
+        uri,
+        path,
+        poster: true,
+        painting: true
+      });
+    });
+
+    console.log(fileList.value)
+  });
+}
+
+function removeFile(key: string) {
+  formData.value.files.delete(key);
+}
+
+function removeAllFiles() {
+  formData.value.files.clear();
+}
+
+function validateFiles(): boolean | string {
+  if (fileList.value?.some((value: ListedFile) => value.poster || value.painting)) {
+    return true;
+  }
+
+  return 'Select at least one file to generate';
+}
+
+function validateName(value: string): boolean | string {
   if (value?.length > 0) {
     return true;
   }
 
-  return 'Select at least one mode';
+  return 'Enter a name for the package';
 }
 
-async function submit () {
+async function submit() {
   const {valid} = await form.value.validate();
 
   console.log(formData.value);
 
   if (valid) {
     // TODO validation and error handling
-    await invoke("generate", formData.value);
+    await invoke("generate", {
+      packageName: formData.value.packageName,
+      files: fileList.value
+    });
     form.value.resetValidation();
   }
 }
@@ -39,49 +112,85 @@ async function submit () {
 <template>
   <v-container>
     <v-form ref="form" @submit.prevent="submit">
-      <div>
-        <v-file-input
-            accept="image/*"
-            label="Input pictures"
-            prepend-icon="mdi-image"
-            :multiple="true"
-        ></v-file-input>
+      <v-row dense>
+        <v-col>
+          <v-data-iterator :items="fileList" :items-per-page="-1">
+            <template v-slot:header>
+              <v-toolbar density="compact">
+                <v-btn variant="flat" color="secondary" @click="addFiles">
+                  <span>Select files</span>
+                  <v-icon class="ma-1" icon="mdi-file-plus-outline"></v-icon>
+                </v-btn>
+                <v-input class="ml-2" :rules="[() => validateFiles()]"></v-input>
+                <v-spacer></v-spacer>
+                <v-btn color="secondary" @click="removeAllFiles">Clear</v-btn>
+              </v-toolbar>
+            </template>
 
-        <v-text-field
-            v-model="formData.packageName"
-            label="Output package Name"
-            prepend-icon="mdi-label"
-        ></v-text-field>
-      </div>
+            <template v-slot:default="{ items }">
+              <v-list>
+                <template v-for="(item, i) in items" :key="item.raw.path">
+                  <v-list-item
+                      :prepend-icon="'mdi-image'"
+                      :title="item.raw.name"
+                      :subtitle="item.raw.uri"
+                      @click=""
+                      :ripple="false"
+                  >
+                    <template v-slot:append>
+                      <v-switch
+                          class="ml-8"
+                          v-model="item.raw.poster"
+                          color="secondary"
+                          label="Poster"
+                          hide-details
+                      ></v-switch>
+                      <v-switch
+                          class="ml-8"
+                          v-model="item.raw.painting"
+                          color="secondary"
+                          label="Paintings"
+                          hide-details
+                      ></v-switch>
+                      <v-divider class="ml-4" vertical></v-divider>
+                      <v-btn
+                          @click="removeFile(item.raw.path)"
+                          class="ml-3"
+                          variant="text"
+                          density="compact"
+                          color="error"
+                          icon="mdi-close"
+                      ></v-btn>
+                    </template>
+                  </v-list-item>
+                  <v-divider v-if="i < items.length - 1" class="ma-1"></v-divider>
+                </template>
+              </v-list>
+            </template>
+          </v-data-iterator>
+        </v-col>
+      </v-row>
 
-      <div>
-        <h3>Generation mode</h3>
-        <v-container fluid>
-          <v-switch
-              v-model="formData.modes"
-              color="primary"
-              label="Generate posters"
-              value="posters"
-              :rules="[(values: string[]) => validateModes(values)]"
-              hide-details
-          ></v-switch>
-          <v-switch
-              v-model="formData.modes"
-              color="primary"
-              label="Generate paintings"
-              value="paintings"
-              :rules="[(values: string[]) => validateModes(values)]"
-          ></v-switch>
-        </v-container>
-      </div>
-
-      <div>
-        <v-btn type="submit"
-               color="primary"
-               block>
-          Generate
-        </v-btn>
-      </div>
+      <v-row dense>
+        <v-col>
+          <v-text-field
+              v-model="formData.packageName"
+              label="Output package Name"
+              density="comfortable"
+              :rules="[(value) => validateName(value)]"
+          >
+            <template v-slot:append>
+              <v-btn type="submit"
+                     color="primary"
+                     block
+              >
+                <span>Generate</span>
+                <v-icon class="ma-1" icon="mdi-package-variant-closed"></v-icon>
+              </v-btn>
+            </template>
+          </v-text-field>
+        </v-col>
+      </v-row>
     </v-form>
   </v-container>
 </template>

@@ -1,4 +1,4 @@
-use crate::lpg::crop_tool::{CropParams, TEMPLATE_DIR};
+use crate::lpg::crop_tool::{CropParams, Modes, TEMPLATE_DIR};
 use std::path::PathBuf;
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Emitter, Manager, Result};
@@ -18,8 +18,17 @@ struct Response {
     message: String,
 }
 
+#[derive(serde::Deserialize, Clone)]
+struct ListedFile {
+    path: String,
+    poster: bool,
+    painting: bool,
+}
+
 #[tauri::command]
-async fn generate(app: AppHandle, package_name: String, modes: Vec<String>) -> Result<Response> {
+async fn generate(app: AppHandle, package_name: String, files: Vec<ListedFile>) -> Result<Response> {
+    println!("package: {} > {}", package_name, files[0].path);
+
     app.emit("loading", true)?;
 
     // TODO handle dir existence
@@ -27,6 +36,7 @@ async fn generate(app: AppHandle, package_name: String, modes: Vec<String>) -> R
     let temp_dir = TempDir::new()?;
     let temp_path = temp_dir.path().to_owned();
     let output_dir = PathBuf::from("output"); // TODO this should be parameterizable
+    // let parsed_modes = modes.iter().map(|m| m.to_uppercase().parse().unwrap()).collect();
 
     // Generation
     println!("Generating pictures...");
@@ -34,15 +44,15 @@ async fn generate(app: AppHandle, package_name: String, modes: Vec<String>) -> R
         input: "./input".to_string(),
         output_dir: temp_path.clone(),
         template_dir,
-        modes: modes.iter().map(|m| m.to_uppercase().parse().unwrap()).collect(),
+        modes: vec![Modes::POSTERS],
     };
 
-    lpg::crop_tool::generate(&params).await;
+    // lpg::crop_tool::generate(&params).await;
     println!("Generation complete !");
 
     // Packaging
     println!("Packaging...");
-    lpg::package_tool::create(temp_path.clone(), output_dir, &package_name).await;
+    // lpg::package_tool::create(temp_path.clone(), output_dir, &package_name).await;
     println!("Packaging complete !");
 
     println!("Temp file {} should be deleted.", temp_path.display());
