@@ -41,8 +41,6 @@ function addFiles() {
       return;
     }
 
-    console.log(files)
-
     files.forEach((path: string) => {
       const fullUri = path.split('\\');
       const name = fullUri.pop() ?? 'img';
@@ -56,8 +54,6 @@ function addFiles() {
         painting: true
       });
     });
-
-    console.log(fileList.value)
   });
 }
 
@@ -110,7 +106,7 @@ async function submit() {
             <template v-slot:header>
               <v-toolbar density="compact">
                 <v-btn variant="flat" color="secondary" @click="addFiles">
-                  <span>Select files</span>
+                  <span>Add files to convert</span>
                   <v-icon class="ma-1" icon="mdi-file-plus-outline"></v-icon>
                 </v-btn>
                 <v-input class="ml-2" :rules="[() => validateFiles()]"></v-input>
@@ -141,7 +137,7 @@ async function submit() {
                           class="ml-8"
                           v-model="item.raw.painting"
                           color="secondary"
-                          label="Paintings"
+                          label="Painting"
                           hide-details
                       ></v-switch>
                       <v-divider class="ml-4" vertical></v-divider>
@@ -176,7 +172,7 @@ async function submit() {
                      color="primary"
                      block
               >
-                <span>Generate</span>
+                <span>Generate Package</span>
                 <v-icon class="ma-1" icon="mdi-package-variant-closed"></v-icon>
               </v-btn>
             </template>

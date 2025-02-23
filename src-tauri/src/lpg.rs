@@ -1,5 +1,4 @@
 pub mod crop_tool {
-    use strum_macros::{EnumString};
     use image::imageops::FilterType;
     use image::{DynamicImage, ImageBuffer, ImageFormat, Rgba};
     use std::path::PathBuf;
@@ -24,44 +23,39 @@ pub mod crop_tool {
     const TIPS_PATH: &str = "LethalPosters\\tips";
     const PAINTINGS_PATH: &str = "LethalPaintings\\paintings";
 
-    // TODO maybe implement enum string if strum is not used elsewhere
-    #[derive(Eq, PartialEq, EnumString)]
-    pub enum Modes {
-        POSTERS,
-        PAINTINGS,
+    #[derive(serde::Deserialize, Clone)]
+    pub struct ListedFile {
+        pub path: String,
+        pub poster: bool,
+        pub painting: bool,
     }
 
-    pub struct CropParams {
-        pub input: String,
-        pub output_dir: PathBuf,
-        pub template_dir: PathBuf,
-        pub modes: Vec<Modes>,
+    #[derive(Clone)]
+    pub struct OpenedListedFile {
+        pub image: DynamicImage,
+        pub poster: bool,
+        pub painting: bool,
     }
-
-    pub async fn generate(params: &CropParams) {
+    pub async fn generate(listed_files: Vec<ListedFile>, output_dir: PathBuf, template_dir: PathBuf) {
         // Pictures to transform
-        let original_pictures = read_input_pictures(&params.input);
+        let original_pictures = read_input_pictures(&listed_files);
 
         // Parallel generation
         let mut tasks = Vec::new();
 
-        if params.modes.contains(&Modes::POSTERS) {
-            let task = generate_posters_task(
-                &params.template_dir,
-                &params.output_dir,
-                original_pictures.clone(),
-            );
-            tasks.push(task);
-        }
+        let task = generate_posters_task(
+            &template_dir,
+            &output_dir,
+            original_pictures.clone(),
+        );
+        tasks.push(task);
 
-        if params.modes.contains(&Modes::PAINTINGS) {
-            let task = generate_paintings_task(
-                &params.template_dir,
-                &params.output_dir,
-                original_pictures.clone(),
-            );
-            tasks.push(task);
-        }
+        let task = generate_paintings_task(
+            &template_dir,
+            &output_dir,
+            original_pictures.clone(),
+        );
+        tasks.push(task);
 
         futures::future::join_all(tasks).await;
     }
@@ -78,14 +72,14 @@ pub mod crop_tool {
         path
     }
 
-    fn read_input_pictures(uri: &str) -> Vec<DynamicImage> {
-        std::fs::create_dir_all(uri).unwrap();
-        std::fs::read_dir(uri)
-            .unwrap()
-            .flat_map(Result::ok)
-            .map(|f| f.path())
-            .map(image::open)
-            .flat_map(Result::ok)
+    fn read_input_pictures(files: &Vec<ListedFile>) -> Vec<OpenedListedFile> {
+        files
+            .iter()
+            .map(|lf| OpenedListedFile {
+                image: image::open(&lf.path).unwrap(),
+                poster: lf.poster,
+                painting: lf.painting,
+            })
             .collect()
     }
 
@@ -93,23 +87,27 @@ pub mod crop_tool {
     fn generate_posters_task(
         template: &PathBuf,
         output: &PathBuf,
-        pictures: Vec<DynamicImage>,
+        selected_files: Vec<OpenedListedFile>,
     ) -> JoinHandle<()> {
         let poster_template = get_template(template, POSTER_TEMPLATE);
         let poster_dir = get_output_path(output, POSTERS_PATH);
         let tips_dir = get_output_path(output, TIPS_PATH);
 
         async_runtime::spawn_blocking(move || {
-            for i in 0..pictures.len() {
+            for i in 0..selected_files.len() {
+                if !selected_files.get(i).unwrap().poster {
+                    continue;
+                }
+
                 let tag = format!("{i}.png");
 
-                let posters: Vec<&DynamicImage> = (0..5).map(|j| g(&pictures, i + j)).collect();
+                let posters: Vec<&DynamicImage> = (0..5).map(|j| g(&selected_files, i + j)).collect();
 
                 generate_atlas(&poster_template, &posters)
                     .save_with_format(poster_dir.join(&tag).as_path(), ImageFormat::Png)
                     .unwrap();
 
-                generate_tips(g(&pictures, i))
+                generate_tips(g(&selected_files, i))
                     .save_with_format(tips_dir.join(&tag).as_path(), ImageFormat::Png)
                     .unwrap();
             }
@@ -119,16 +117,20 @@ pub mod crop_tool {
     fn generate_paintings_task(
         template: &PathBuf,
         output: &PathBuf,
-        pictures: Vec<DynamicImage>,
+        selected_files: Vec<OpenedListedFile>,
     ) -> JoinHandle<()> {
         let painting_template = get_template(template, PAINTING_TEMPLATE);
         let paintings_dir = get_output_path(output, PAINTINGS_PATH);
 
         async_runtime::spawn_blocking(move || {
-            for i in 0..pictures.len() {
+            for i in 0..selected_files.len() {
+                if !selected_files.get(i).unwrap().painting {
+                    continue;
+                }
+
                 let tag = format!("{i}.png");
 
-                generate_painting(&painting_template, g(&pictures, i))
+                generate_painting(&painting_template, g(&selected_files, i))
                     .save_with_format(paintings_dir.join(&tag).as_path(), ImageFormat::Png)
                     .unwrap();
             }
@@ -159,8 +161,8 @@ pub mod crop_tool {
         base
     }
 
-    fn g(input: &Vec<DynamicImage>, index: usize) -> &DynamicImage {
-        input.get(index % input.len()).unwrap()
+    fn g(input: &Vec<OpenedListedFile>, index: usize) -> &DynamicImage {
+        &input.get(index % input.len()).unwrap().image
     }
 }
 
