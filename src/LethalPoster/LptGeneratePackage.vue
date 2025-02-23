@@ -29,14 +29,6 @@ const fileList = computed<ListedFile[]>(() => {
 function addFiles() {
   form.value.resetValidation();
 
-  /*
-  const files = [
-    'C:\\Users\\loicm\\OneDrive\\Pictures\\dewle8t-e263df82-71e6-4192-9b43-40c3ce270e72.png',
-    'C:\\Users\\loicm\\OneDrive\\Pictures\\F0jMyx2XwAAbAKp.jpg',
-    'C:\\Users\\loicm\\OneDrive\\Pictures\\F0dJbkxWIAgWpL0.jpg'
-  ];
-  * */
-
   open({
     multiple: true,
     directory: false,
