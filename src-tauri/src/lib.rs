@@ -104,7 +104,7 @@ pub fn run() {
             // Set default lpg output
             if !settings.has("lpg") {
                 let default_lpg = to_value(lpg::settings::Settings {
-                    output: "output".to_string()
+                    output: PathBuf::from("output").display().to_string()
                 })?;
                 settings.set("lpg", default_lpg);
                 println!("Default lpg setting set !");
