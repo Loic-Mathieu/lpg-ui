@@ -30,7 +30,7 @@ export function getPathData(rawPath: string): PathData {
 
     const splitFile = file.split(EXT);
     const extension = splitFile.pop();
-    const name = splitFile.pop();
+    const name = splitFile.join(EXT);
 
     return {
         path: rawPath,

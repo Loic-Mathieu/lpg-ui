@@ -213,6 +213,7 @@ pub mod package_tool {
     pub async fn load(uri: PathBuf, package_name: &str, to_dir: PathBuf) {
         let package = format!("{package_name}.zip");
         let from_path = uri.join(package);
+        println!("Loading from {}", from_path.display());
         let file = fs::File::open(&from_path).unwrap();
         let mut archive = ZipArchive::new(file).unwrap();
 
@@ -235,9 +236,15 @@ pub mod package_tool {
 
     fn clean_dir(path: &PathBuf) {
         let poster_path = path.join(POSTERS_PATH);
-        fs::remove_dir_all(&poster_path).unwrap();
+        if poster_path.exists() {
+            println!("Cleaning > {}", poster_path.display());
+            fs::remove_dir_all(&poster_path).unwrap();
+        }
         let painting_path = path.join(PAINTINGS_PATH);
-        fs::remove_dir_all(&painting_path).unwrap();
+        if painting_path.exists() {
+            println!("Cleaning > {}", painting_path.display());
+            fs::remove_dir_all(&painting_path).unwrap();
+        }
     }
 
     fn unzip(out_path: &PathBuf, file: &mut ZipFile) {
@@ -249,5 +256,14 @@ pub mod package_tool {
         // Extract file
         let mut outfile = fs::File::create(&out_path).unwrap();
         io::copy(file, &mut outfile).unwrap();
+    }
+}
+
+pub mod settings {
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Serialize, Deserialize)]
+    pub struct Settings {
+        pub output: String,
     }
 }
