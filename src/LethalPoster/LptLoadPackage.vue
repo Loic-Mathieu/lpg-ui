@@ -17,8 +17,16 @@ interface Package extends PathData {
   created: string,
 }
 
-const isOutputFolderSet = ref(true);
-const isModFolderSet = ref(true);
+const isOutputFolderSet = computed( () => {
+  const path2 = settingsStore.settings.lpg.output;
+
+  return path2 && path2.length > 0;
+});
+const isModFolderSet = computed( () => {
+  const path1 = settingsStore.settings.global.plugin_path;
+
+  return path1 && path1.length > 0;
+});
 
 const packages = ref<Package[]>([]);
 

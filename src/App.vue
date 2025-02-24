@@ -2,7 +2,8 @@
 import Lpt from "./LethalPoster/Lpt.vue";
 import Settings from "./Common/Settings.vue";
 import Loader from "./Common/Loader.vue";
-import {computed, ref} from "vue";
+import {computed, onMounted, ref} from "vue";
+import {useSettingsStore} from "./stores/settingsStore.ts";
 
 const routes: Record<string, object> = {
   '/': Lpt,
@@ -19,7 +20,16 @@ const currentView = computed(() => {
   return routes[currentPath.value.slice(1) || '/'];
 });
 
-const isModFolderSet = ref(true);
+const settingsStore = useSettingsStore();
+const isModFolderSet = computed(() => {
+  const path = settingsStore.settings.global.plugin_path;
+  return (path && path.length > 0);
+});
+
+onMounted(() => {
+  settingsStore.init();
+});
+
 </script>
 
 <template>
