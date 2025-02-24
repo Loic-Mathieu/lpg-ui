@@ -40,7 +40,7 @@ function validatePath(value: string): boolean | string {
 async function submit() {
   const {valid} = await form.value.validate();
 
-  if (valid) {
+  if (valid && !settingsStore.isLoading) {
     await settingsStore.saveStore();
   }
 }
@@ -83,7 +83,9 @@ async function submit() {
 
       <v-btn type="submit"
              color="primary"
-             block>
+             block
+             :disabled="settingsStore.isLoading"
+      >
         Save
       </v-btn>
     </v-form>
