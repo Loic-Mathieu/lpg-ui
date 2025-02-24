@@ -1,36 +1,30 @@
 <script setup lang="ts">
-import {ref} from "vue";
+import {onUnmounted, ref} from "vue";
 import {open} from "@tauri-apps/plugin-dialog";
-import {load} from "@tauri-apps/plugin-store";
+import {useSettingsStore} from "../stores/settingsStore.ts";
 
-export interface OutputDirSettings {
-  output: string | null;
-}
-
-export interface Settings {
-  global: {plugin_path: string | null},
-  lpg: OutputDirSettings
-}
-
-const formData = ref<Settings>({
-  global: {plugin_path: null},
-  lpg: {output: null},
-});
+const settingsStore = useSettingsStore();
+const formData = settingsStore.settings;
 const form = ref();
+
+onUnmounted(() => {
+  settingsStore.init();
+});
 
 function openFolder() {
   open({directory: true}).then((selection: string | null) => {
     // Todo this is not efficient
-    if (selection && formData.value) {
-      formData.value.global.plugin_path = selection;
+    if (selection && formData.global) {
+      formData.global.plugin_path = selection;
     }
   });
 }
+
 function openFolder2() {
   open({directory: true}).then((selection: string | null) => {
     // Todo this is not efficient
-    if (selection && formData.value) {
-      formData.value.lpg.output = selection;
+    if (selection && formData.lpg) {
+      formData.lpg.output = selection;
     }
   });
 }
@@ -43,23 +37,11 @@ function validatePath(value: string): boolean | string {
   return 'Path required !';
 }
 
-load('settings.json', {autoSave: false}).then(async (store) => {
-  formData.value.global = await store.get('global') ?? {plugin_path: ''};
-  formData.value.lpg = await store.get('lpg') ?? {output: ''};
-})
-
 async function submit() {
   const {valid} = await form.value.validate();
 
   if (valid) {
-    // Update the settings
-    const store = await load('settings.json', {autoSave: false});
-
-    Promise.all([
-      store.set('global', formData.value?.global),
-      store.set('lpg', formData.value?.lpg)
-    ])
-        .then(() => store.save().then(form.value.resetValidation))
+    await settingsStore.saveStore();
   }
 }
 </script>
