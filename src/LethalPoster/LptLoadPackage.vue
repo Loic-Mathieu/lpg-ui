@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import {ref} from "vue";
+import {computed, onMounted, ref} from "vue";
 import {readDir, watch, remove, copyFile} from '@tauri-apps/plugin-fs';
 import {open, save} from "@tauri-apps/plugin-dialog";
 import {PathData, getPathData, joinPath, filters} from "../utils/fileUtils.ts";
 import {invoke} from "@tauri-apps/api/core";
+import {useSettingsStore} from "../stores/settingsStore.ts";
 
-// Todo get from store
-const PATH = 'D:\\work\\lpg-ui\\src-tauri\\output';
+const settingsStore = useSettingsStore();
+const path = computed(() => settingsStore.settings.lpg.output);
+
+onMounted(() => {
+  settingsStore.init();
+});
 
 interface Package extends PathData {
   created: string,
@@ -28,7 +33,7 @@ function importPackage() {
     }
 
     const copies = files.map(getPathData)
-        .map((from) => copyFile(from.path, joinPath(PATH, from.file)));
+        .map((from) => copyFile(from.path, joinPath(path.value, from.file)));
 
     Promise.all(copies).then(initDir);
   });
@@ -50,14 +55,14 @@ function exportPackage(from: PathData) {
 }
 
 function initDir() {
-  readDir(PATH).then((entries) => {
+  readDir(path.value).then((entries) => {
     // Clear
     packages.value = [];
 
     // Populate
     entries.forEach((entry) => {
       packages.value.push({
-        ...getPathData(joinPath(PATH, entry.name)),
+        ...getPathData(joinPath(path.value, entry.name)),
         created: '23/02/2030',
       });
     });
@@ -68,7 +73,7 @@ function deletePackage(path: string) {
   remove(path).then(initDir);
 }
 
-watch(PATH, initDir).then(initDir);
+watch(path.value, initDir).then(initDir);
 
 function loadPackage(packageName: string | undefined) {
   if (packageName) {

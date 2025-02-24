@@ -20,7 +20,6 @@ export const useSettingsStore = defineStore(SETTINGS_KEY, () => {
     let unlisten: UnlistenFn | null = null;
 
     async function loadStore(): Promise<void> {
-        console.log('INIT', SETTINGS_KEY);
         isLoading.value = true;
         return load(jsonKey, {autoSave: false}).then(async (store) => {
             settings.value.global = await store.get('global') ?? {plugin_path: ''};

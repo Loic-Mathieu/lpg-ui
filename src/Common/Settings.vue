@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onUnmounted, ref} from "vue";
+import {onMounted, ref} from "vue";
 import {open} from "@tauri-apps/plugin-dialog";
 import {useSettingsStore} from "../stores/settingsStore.ts";
 
@@ -7,7 +7,7 @@ const settingsStore = useSettingsStore();
 const formData = settingsStore.settings;
 const form = ref();
 
-onUnmounted(() => {
+onMounted(() => {
   settingsStore.init();
 });
 

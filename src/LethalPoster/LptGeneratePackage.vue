@@ -73,8 +73,6 @@ function validateName(value: string): boolean | string {
 async function submit() {
   const {valid} = await form.value.validate();
 
-  console.log(formData.value);
-
   if (valid) {
     // TODO validation and error handling
     await invoke("generate", {
