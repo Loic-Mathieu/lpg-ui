@@ -1,21 +1,38 @@
 <script setup lang="ts">
 import {ref} from "vue";
 import {open} from "@tauri-apps/plugin-dialog";
-import {invoke} from "@tauri-apps/api/core";
+import {load} from "@tauri-apps/plugin-store";
 
-const formData = ref<Record<string, any>>({
-  modToolPath: "",
-  picturesInputPath: "",
-  picturesOutputPath: "",
-  zipOutputPath: "",
+export interface OutputDirSettings {
+  output: string | null;
+}
+
+export interface Settings {
+  global: {plugin_path: string | null},
+  lpg: OutputDirSettings
+}
+
+const formData = ref<Settings>({
+  global: {plugin_path: null},
+  lpg: {output: null},
 });
 const form = ref();
 
-async function openFolder(key: string) {
-  const selected = await open({directory: true});
-  if (selected) {
-    formData.value[key] = selected as string;
-  }
+function openFolder() {
+  open({directory: true}).then((selection: string | null) => {
+    // Todo this is not efficient
+    if (selection && formData.value) {
+      formData.value.global.plugin_path = selection;
+    }
+  });
+}
+function openFolder2() {
+  open({directory: true}).then((selection: string | null) => {
+    // Todo this is not efficient
+    if (selection && formData.value) {
+      formData.value.lpg.output = selection;
+    }
+  });
 }
 
 function validatePath(value: string): boolean | string {
@@ -23,17 +40,26 @@ function validatePath(value: string): boolean | string {
     return true;
   }
 
-  return 'Path required';
+  return 'Path required !';
 }
 
-async function submit () {
+load('settings.json', {autoSave: false}).then(async (store) => {
+  formData.value.global = await store.get('global') ?? {plugin_path: ''};
+  formData.value.lpg = await store.get('lpg') ?? {output: ''};
+})
+
+async function submit() {
   const {valid} = await form.value.validate();
 
   if (valid) {
-    // Learn more about Tauri commands at https://v1.tauri.app/v1/guides/features/command
-    const response = await invoke<{message: string}>("generate", formData.value);
-    console.log(response)
-    form.value.resetValidation();
+    // Update the settings
+    const store = await load('settings.json', {autoSave: false});
+
+    Promise.all([
+      store.set('global', formData.value?.global),
+      store.set('lpg', formData.value?.lpg)
+    ])
+        .then(() => store.save().then(form.value.resetValidation))
   }
 }
 </script>
@@ -45,14 +71,14 @@ async function submit () {
 
       <v-text-field
           class="path-picker"
-          v-model="formData.modToolPath"
+          v-model="formData.global.plugin_path"
           :rules="[(path: string) => validatePath(path)]"
           label="Mod tool folder path"
           variant="outlined"
           clearable
       >
         <template v-slot:append>
-          <v-btn @click="openFolder(formData.modToolPath)">Open</v-btn>
+          <v-btn @click="openFolder">Open</v-btn>
         </template>
       </v-text-field>
 
@@ -62,27 +88,14 @@ async function submit () {
 
       <v-text-field
           class="path-picker"
-          v-model="formData.picturesInputPath"
-          :rules="[(path: string) => validatePath(path)]"
-          label="Input pictures path"
-          variant="outlined"
-          clearable
-      >
-        <template v-slot:append>
-          <v-btn @click="openFolder(formData.picturesInputPath)">Open</v-btn>
-        </template>
-      </v-text-field>
-
-      <v-text-field
-          class="path-picker"
-          v-model="formData.zipOutputPath"
+          v-model="formData.lpg.output"
           :rules="[(path: string) => validatePath(path)]"
           label="Exported zip path"
           variant="outlined"
           clearable
       >
         <template v-slot:append>
-          <v-btn @click="openFolder(formData.zipOutputPath)">Open</v-btn>
+          <v-btn @click="openFolder2">Open</v-btn>
         </template>
       </v-text-field>
 

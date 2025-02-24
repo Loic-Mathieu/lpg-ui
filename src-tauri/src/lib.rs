@@ -57,7 +57,7 @@ async fn generate(app: AppHandle, package_name: String, files: Vec<ListedFile>) 
     })
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Settings {
     pub plugin_path: String,
 }
@@ -76,8 +76,10 @@ async fn load(app: AppHandle, package_name: String) -> Result<Response> {
 
     let global_value = settings.get("global").expect("global settings is missing");
     let global_settings: Settings = serde_json::from_value(global_value)?;
+    println!("?? > {:?}", global_settings);
     // TODO validate value
     let plugins_dir = PathBuf::from(global_settings.plugin_path);
+    println!("Mount > {}", plugins_dir.display());
 
     println!("Loading package...");
     lpg::package_tool::load(output_dir, &package_name, plugins_dir).await;
