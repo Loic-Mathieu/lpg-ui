@@ -167,22 +167,24 @@ pub mod crop_tool {
 }
 
 pub mod package_tool {
-    use std::fs::File;
+    use std::fs;
+    use std::io;
     use std::io::{Read, Write};
     use std::path::PathBuf;
     use walkdir::WalkDir;
+    use zip::read::ZipFile;
     use zip::write::SimpleFileOptions;
+    use zip::ZipArchive;
 
-    pub async fn read_metadata(uri: PathBuf, package_name: &str) {
-        // TODO implement
-        println!("Loading package {} > {}", uri.display(), package_name);
-    }
+    // Output paths
+    const POSTERS_PATH: &str = "LethalPosters";
+    const PAINTINGS_PATH: &str = "LethalPaintings";
 
     pub async fn create(from_dir: PathBuf, uri: PathBuf, package_name: &str) {
-        std::fs::create_dir_all(uri.clone()).unwrap();
+        fs::create_dir_all(uri.clone()).unwrap();
         let package = format!("{package_name}.zip");
         let to_path = uri.join(package);
-        let to_file = File::create(to_path.clone()).unwrap();
+        let to_file = fs::File::create(to_path.clone()).unwrap();
         let mut zip = zip::ZipWriter::new(to_file);
 
         let options = SimpleFileOptions::default();
@@ -198,7 +200,7 @@ pub mod package_tool {
             zip.start_file(relative_path.to_string_lossy().replace("\\", "/"), options)
                 .unwrap();
 
-            let mut file = File::open(path).unwrap();
+            let mut file = fs::File::open(path).unwrap();
             let mut buffer = Vec::new();
 
             file.read_to_end(&mut buffer).unwrap();
@@ -208,8 +210,44 @@ pub mod package_tool {
         zip.finish().unwrap();
     }
 
-    pub async fn load(uri: PathBuf, package_name: &str) {
-        // TODO implement
-        println!("Loading package {} > {}", uri.display(), package_name);
+    pub async fn load(uri: PathBuf, package_name: &str, to_dir: PathBuf) {
+        let package = format!("{package_name}.zip");
+        let from_path = uri.join(package);
+        let file = fs::File::open(&from_path).unwrap();
+        let mut archive = ZipArchive::new(file).unwrap();
+
+        // TODO validate to_dir exists
+
+        // TODO validate that package is valid
+        // User should not be able to load anything else in the output
+
+        // Clean output
+        clean_dir(&to_dir);
+
+        // Decompress
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i).unwrap();
+            let out_path = to_dir.join(file.mangled_name());
+
+            unzip(&out_path, &mut file);
+        }
+    }
+
+    fn clean_dir(path: &PathBuf) {
+        let poster_path = path.join(POSTERS_PATH);
+        fs::remove_dir_all(&poster_path).unwrap();
+        let painting_path = path.join(PAINTINGS_PATH);
+        fs::remove_dir_all(&painting_path).unwrap();
+    }
+
+    fn unzip(out_path: &PathBuf, file: &mut ZipFile) {
+        // Ensure parent directories exist
+        if let Some(parent) = out_path.parent() {
+            fs::create_dir_all(parent).unwrap();
+        }
+
+        // Extract file
+        let mut outfile = fs::File::create(&out_path).unwrap();
+        io::copy(file, &mut outfile).unwrap();
     }
 }

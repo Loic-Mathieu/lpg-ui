@@ -19,11 +19,7 @@ struct Response {
 }
 
 #[tauri::command]
-async fn generate(
-    app: AppHandle,
-    package_name: String,
-    files: Vec<ListedFile>,
-) -> Result<Response> {
+async fn generate(app: AppHandle, package_name: String, files: Vec<ListedFile>) -> Result<Response> {
     app.emit("loading", true)?;
 
     // TODO handle dir existence
@@ -52,17 +48,20 @@ async fn generate(
 }
 
 #[tauri::command]
-async fn load(name: String) {
-    // TODO implement
-    let output_dir = PathBuf::from("output"); // TODO this should be parameterizable
-    lpg::package_tool::load(output_dir, &name).await;
-}
+async fn load(app: AppHandle, package_name: String) -> Result<Response> {
+    app.emit("loading", true)?;
 
-#[tauri::command]
-async fn list_files(name: String) {
-    // TODO implement
     let output_dir = PathBuf::from("output"); // TODO this should be parameterizable
-    lpg::package_tool::read_metadata(output_dir, &name).await;
+    let plugins_dir = PathBuf::from("input"); // TODO this should be parameterizable
+
+    println!("Loading package...");
+    lpg::package_tool::load(output_dir, &package_name, plugins_dir).await;
+    println!("Package loaded !");
+
+    app.emit("loading", false)?;
+    Ok(Response {
+        message: format!("Package {} was successfully loaded !", package_name),
+    })
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -72,7 +71,7 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![generate, load, list_files])
+        .invoke_handler(tauri::generate_handler![generate, load])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

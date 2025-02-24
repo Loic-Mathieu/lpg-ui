@@ -3,10 +3,10 @@ import {ref} from "vue";
 import {readDir, watch, remove, copyFile} from '@tauri-apps/plugin-fs';
 import {open, save} from "@tauri-apps/plugin-dialog";
 import {PathData, getPathData, joinPath, filters} from "../utils/fileUtils.ts";
+import {invoke} from "@tauri-apps/api/core";
 
 // Todo get from store
 const PATH = 'D:\\work\\lpg-ui\\src-tauri\\output';
-const MODS = 'D:\\Jeux\\r2modman\\LethalCompany\\profiles\\Mace\\BepInEx\\plugins';
 
 interface Package extends PathData {
   created: string,
@@ -30,7 +30,7 @@ function importPackage() {
     const copies = files.map(getPathData)
         .map((from) => copyFile(from.path, joinPath(PATH, from.file)));
 
-    Promise.all(copies).then(loadDir);
+    Promise.all(copies).then(initDir);
   });
 }
 
@@ -45,11 +45,11 @@ function exportPackage(from: PathData) {
     const to = getPathData(toPath);
     const file = to.file ?? from.file;
 
-    copyFile(from.path, joinPath(to.uri, file)).then(loadDir)
+    copyFile(from.path, joinPath(to.uri, file)).then(initDir)
   });
 }
 
-function loadDir() {
+function initDir() {
   readDir(PATH).then((entries) => {
     // Clear
     packages.value = [];
@@ -65,10 +65,18 @@ function loadDir() {
 }
 
 function deletePackage(path: string) {
-  remove(path).then(loadDir);
+  remove(path).then(initDir);
 }
 
-watch(PATH, loadDir).then(loadDir);
+watch(PATH, initDir).then(initDir);
+
+function loadPackage(packageName: string | undefined) {
+  if (packageName) {
+    invoke("load", {packageName}).then((response) => {
+      console.log(response)
+    });
+  }
+}
 </script>
 
 <template>
@@ -94,7 +102,12 @@ watch(PATH, loadDir).then(loadDir);
                          :ripple="false"
             >
               <template v-slot:append>
-                <v-btn variant="outlined" class="ml-1 mr-5" color="secondary" :disabled="!isModFolderSet">
+                <v-btn @click="loadPackage(pkg.raw.name)"
+                       variant="outlined"
+                       class="ml-1 mr-5"
+                       color="secondary"
+                       :disabled="!isModFolderSet"
+                >
                   <span>Load</span>
                   <v-icon class="ml-1" icon="mdi-upload-box"></v-icon>
                 </v-btn>
