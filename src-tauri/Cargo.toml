@@ -1,7 +1,7 @@
 [package]
 name = "lpg-ui"
 description = "A UI using the LPG crop tool"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["femboy.tv", "Atakku", "Loïc Mathieu"]
 edition = "2021"
 
