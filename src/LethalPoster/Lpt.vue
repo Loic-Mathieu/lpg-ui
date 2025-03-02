@@ -1,19 +1,15 @@
 <script setup lang="ts">
 import LptGeneratePackage from "./LptGeneratePackage.vue";
 import LptLoadPackage from "./LptLoadPackage.vue";
-</script>
+import {ref} from "vue";
 
-<script lang="ts">
-export default {
-  data: () => ({
-    tab: null,
-  }),
-}
+const tab = ref();
 </script>
 
 <template>
   <v-tabs
       v-model="tab"
+      fixed-tabs
       bg-color="primary"
   >
     <v-tab value="generate">Generate package</v-tab>

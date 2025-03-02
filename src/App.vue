@@ -12,44 +12,54 @@ const routes: Record<string, object> = {
 
 const currentPath = ref(window.location.hash);
 
-window.addEventListener('hashchange', () => {
-  currentPath.value = window.location.hash
-})
-
 const currentView = computed(() => {
   return routes[currentPath.value.slice(1) || '/'];
 });
 
 const settingsStore = useSettingsStore();
-const isModFolderSet = computed(() => {
-  const path = settingsStore.settings.global.plugin_path;
-  return (path && path.length > 0);
-});
+
+const theme = computed(() => settingsStore.isThemeDark ? 'dark' : 'light');
 
 onMounted(() => {
   settingsStore.init();
+
+  window.addEventListener('hashchange', () => {
+    currentPath.value = window.location.hash
+  })
 });
 
 </script>
 
 <template>
-  <v-app>
+  <v-app :theme="theme">
     <Loader></Loader>
     <v-app-bar>
       <v-app-bar-title>
-        <a href="#/" class="text-decoration-none text-white">
+        <a href="#/" class="" :class="[`action-${theme}`]">
           Package tool
         </a>
       </v-app-bar-title>
 
-      <a href="#/settings" class="text-decoration-none text-white ma-1">
+      <a href="#/settings" :class="[`action-${theme}`, 'ma-1']">
         <v-btn icon="mdi-cog"></v-btn>
       </a>
     </v-app-bar>
 
     <v-main>
-      <v-alert v-if="!isModFolderSet" icon="mdi-folder-alert" color="warning" text="The mod tool directory is not set in the app settings"></v-alert>
+      <v-alert v-if="!settingsStore.isPluginPathSet" icon="mdi-folder-alert" color="warning" text="The mod tool directory is not set in the app settings"></v-alert>
       <component :is="currentView" />
     </v-main>
   </v-app>
 </template>
+
+<style>
+.action-light {
+  text-decoration: none;
+  color: black;
+}
+
+.action-dark {
+  text-decoration: none;
+  color: white;
+}
+</style>

@@ -1,11 +1,19 @@
 <script setup lang="ts">
-import {onMounted, onUnmounted, ref} from "vue";
-import {open} from "@tauri-apps/plugin-dialog";
+import {computed, onMounted, onUnmounted, ref} from "vue";
 import {useSettingsStore} from "../stores/settingsStore.ts";
+import PathPicker from "./PathPicker.vue";
 
 const settingsStore = useSettingsStore();
 const formData = settingsStore.settings;
 const form = ref();
+
+const themeInfo = computed(() => {
+  return {
+    isThemeDark: settingsStore.isThemeDark,
+    icon: settingsStore.isThemeDark ? 'mdi-moon-waxing-crescent' : 'mdi-white-balance-sunny',
+    name: settingsStore.isThemeDark ? 'dark' : 'light',
+  }
+})
 
 onMounted(() => {
   settingsStore.init();
@@ -16,30 +24,8 @@ onUnmounted(() => {
   settingsStore.loadStore();
 });
 
-function openFolder() {
-  open({directory: true}).then((selection: string | null) => {
-    // Todo this is not efficient
-    if (selection && formData.global) {
-      formData.global.plugin_path = selection;
-    }
-  });
-}
-
-function openFolder2() {
-  open({directory: true}).then((selection: string | null) => {
-    // Todo this is not efficient
-    if (selection && formData.lpg) {
-      formData.lpg.output = selection;
-    }
-  });
-}
-
-function validatePath(value: string): boolean | string {
-  if (value?.length > 0) {
-    return true;
-  }
-
-  return 'Path required !';
+function changeTheme() {
+  settingsStore.settings.global.theme = themeInfo.value.isThemeDark ? 'light' : 'dark';
 }
 
 async function submit() {
@@ -61,17 +47,15 @@ async function submit() {
             <h1>General settings</h1>
           </v-row>
           <v-row>
-            <v-text-field
-                v-model="formData.global.plugin_path"
-                :rules="[(path: string) => validatePath(path)]"
-                label="Mod tool folder path"
-                variant="outlined"
-                clearable
-            >
-              <template v-slot:append>
-                <v-btn @click="openFolder">Open</v-btn>
-              </template>
-            </v-text-field>
+            <PathPicker v-model="formData.global.plugin_path" label="Mod tool folder path"/>
+          </v-row>
+          <v-row>
+            <v-col cols="8" class="align-content-end">
+              <h2 class="align-content-end">Theme :</h2>
+            </v-col>
+            <v-col>
+              <v-btn block :prepend-icon="themeInfo.icon" @click="changeTheme">{{themeInfo.name}}</v-btn>
+            </v-col>
           </v-row>
         </v-col>
       </v-row>
@@ -85,18 +69,7 @@ async function submit() {
             <h1>Lethal Poster settings</h1>
           </v-row>
           <v-row>
-            <v-text-field
-                class="path-picker"
-                v-model="formData.lpg.output"
-                :rules="[(path: string) => validatePath(path)]"
-                label="Exported zip path"
-                variant="outlined"
-                clearable
-            >
-              <template v-slot:append>
-                <v-btn @click="openFolder2">Open</v-btn>
-              </template>
-            </v-text-field>
+            <PathPicker v-model="formData.lpg.output" label="Exported zip path"/>
           </v-row>
         </v-col>
       </v-row>
