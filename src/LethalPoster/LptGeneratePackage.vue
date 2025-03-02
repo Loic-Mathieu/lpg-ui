@@ -4,23 +4,23 @@ import {invoke} from "@tauri-apps/api/core";
 import { open } from '@tauri-apps/plugin-dialog';
 import {PathData, getPathData, filters} from "../utils/fileUtils.ts";
 
-interface ListedFile extends PathData {
+interface ListedPicture extends PathData {
   poster: boolean;
   painting: boolean;
 }
 
 interface Data {
   packageName: string;
-  files: Map<string, ListedFile>;
+  files: Map<string, ListedPicture>;
 }
 
 const form = ref();
 const formData = ref<Data>({
   packageName: '',
-  files: new Map<string, ListedFile>([]),
+  files: new Map<string, ListedPicture>([]),
 });
 
-const fileList = computed<ListedFile[]>(() => {
+const fileList = computed<ListedPicture[]>(() => {
   return [...formData.value.files.values()];
 });
 
@@ -55,7 +55,7 @@ function removeAllFiles() {
 }
 
 function validateFiles(): boolean | string {
-  if (fileList.value?.some((value: ListedFile) => value.poster || value.painting)) {
+  if (fileList.value?.some((value: ListedPicture) => value.poster || value.painting)) {
     return true;
   }
 
@@ -110,6 +110,7 @@ async function submit() {
               <v-list>
                 <template v-for="(item, i) in items" :key="item.raw.path">
                   <v-list-item
+                      :class="!item.raw.poster && !item.raw.painting ? 'muted' : ''"
                       :prepend-icon="'mdi-image'"
                       :title="item.raw.name"
                       :subtitle="item.raw.uri"
@@ -178,3 +179,10 @@ async function submit() {
     </v-form>
   </v-container>
 </template>
+
+<style>
+.muted .v-list-item-title {
+  opacity: 0.5;
+  text-decoration: line-through !important;
+}
+</style>
