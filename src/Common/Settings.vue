@@ -10,7 +10,7 @@ const form = ref();
 const themeInfo = computed(() => {
   return {
     isThemeDark: settingsStore.isThemeDark,
-    icon: settingsStore.isThemeDark ? 'mdi-moon-waxing-crescent' : 'mdi-white-balance-sunny',
+    icon: settingsStore.isThemeDark ? 'mdi-weather-night' : 'mdi-white-balance-sunny',
     name: settingsStore.isThemeDark ? 'dark' : 'light',
   }
 })
@@ -43,19 +43,20 @@ async function submit() {
       <!-- GENERAL -->
       <v-row>
         <v-col class="ma-3">
-          <v-row>
+          <v-row dense>
             <h1>General settings</h1>
           </v-row>
-          <v-row>
-            <PathPicker v-model="formData.global.plugin_path" label="Mod tool folder path"/>
-          </v-row>
-          <v-row>
-            <v-col cols="8" class="align-content-end">
-              <h2 class="align-content-end">Theme :</h2>
+          <v-row dense>
+            <v-col cols="2" class="align-content-end">
+              <h2 class="text-end">Theme :</h2>
             </v-col>
             <v-col>
               <v-btn block :prepend-icon="themeInfo.icon" @click="changeTheme">{{themeInfo.name}}</v-btn>
             </v-col>
+            <v-spacer></v-spacer>
+          </v-row>
+          <v-row>
+            <PathPicker v-model="formData.global.plugin_path" label="Mod tool folder path"/>
           </v-row>
         </v-col>
       </v-row>

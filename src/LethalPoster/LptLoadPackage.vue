@@ -15,12 +15,6 @@ const packagePath = computed(() => settingsStore.settings.lpg.output);
 
 const packages = ref<Package[]>([]);
 
-onMounted(() => {
-  settingsStore.init();
-
-  watch(packagePath.value, initDir).then(initDir);
-});
-
 function importPackage() {
   open({
     multiple: true,
@@ -77,6 +71,12 @@ function loadPackage(packageName: string | undefined) {
     });
   }
 }
+
+onMounted(() => {
+  settingsStore.init();
+
+  watch(packagePath.value, initDir).then(initDir);
+});
 </script>
 
 <template>
@@ -139,6 +139,15 @@ function loadPackage(packageName: string | undefined) {
             <v-divider v-if="i < items.length - 1" class="ma-1"></v-divider>
           </template>
         </v-list>
+      </template>
+
+      <template v-slot:no-data>
+        <v-empty-state title="No package !" text="Please add a package to use this feature">
+          <template v-slot:actions>
+            <v-btn @click="$emit('changeTab')">Create</v-btn>
+            <v-btn @click="importPackage">Import</v-btn>
+          </template>
+        </v-empty-state>
       </template>
     </v-data-iterator>
   </v-container>

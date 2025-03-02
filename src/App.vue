@@ -35,7 +35,7 @@ onMounted(() => {
     <Loader></Loader>
     <v-app-bar>
       <v-app-bar-title>
-        <a href="#/" class="" :class="[`action-${theme}`]">
+        <a href="#/" class="" :class="[`action-${theme}`, 'text-uppercase']">
           Package tool
         </a>
       </v-app-bar-title>
@@ -46,7 +46,13 @@ onMounted(() => {
     </v-app-bar>
 
     <v-main>
-      <v-alert v-if="!settingsStore.isPluginPathSet" icon="mdi-folder-alert" color="warning" text="The mod tool directory is not set in the app settings"></v-alert>
+      <v-alert variant="tonal" v-if="!settingsStore.isPluginPathSet" icon="mdi-folder-alert" color="warning" text="The mod tool directory is not set in the app settings !">
+        <template v-slot:append>
+          <a href="#/settings" :class="[`action-${theme}`, 'ma-1']">
+            <v-btn variant="text">Go to settings</v-btn>
+          </a>
+        </template>
+      </v-alert>
       <component :is="currentView" />
     </v-main>
   </v-app>

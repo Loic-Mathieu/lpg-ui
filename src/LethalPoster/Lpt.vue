@@ -4,6 +4,10 @@ import LptLoadPackage from "./LptLoadPackage.vue";
 import {ref} from "vue";
 
 const tab = ref();
+
+function changeTab(target: 'generate' | 'load') {
+  tab.value = target;
+}
 </script>
 
 <template>
@@ -22,7 +26,7 @@ const tab = ref();
     </v-tabs-window-item>
 
     <v-tabs-window-item value="load">
-      <LptLoadPackage></LptLoadPackage>
+      <LptLoadPackage @changeTab="changeTab('generate')"></LptLoadPackage>
     </v-tabs-window-item>
   </v-tabs-window>
 </template>
