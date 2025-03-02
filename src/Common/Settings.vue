@@ -12,6 +12,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  // Load the saved settings
   settingsStore.loadStore();
 });
 
@@ -53,51 +54,74 @@ async function submit() {
 <template>
   <v-container>
     <v-form ref="form" @submit.prevent="submit">
-      <h1>General settings</h1>
-
-      <v-text-field
-          class="path-picker"
-          v-model="formData.global.plugin_path"
-          :rules="[(path: string) => validatePath(path)]"
-          label="Mod tool folder path"
-          variant="outlined"
-          clearable
-      >
-        <template v-slot:append>
-          <v-btn @click="openFolder">Open</v-btn>
-        </template>
-      </v-text-field>
+      <!-- GENERAL -->
+      <v-row>
+        <v-col class="ma-3">
+          <v-row>
+            <h1>General settings</h1>
+          </v-row>
+          <v-row>
+            <v-text-field
+                v-model="formData.global.plugin_path"
+                :rules="[(path: string) => validatePath(path)]"
+                label="Mod tool folder path"
+                variant="outlined"
+                clearable
+            >
+              <template v-slot:append>
+                <v-btn @click="openFolder">Open</v-btn>
+              </template>
+            </v-text-field>
+          </v-row>
+        </v-col>
+      </v-row>
 
       <v-divider></v-divider>
 
-      <h1>Lethal Poster settings</h1>
+      <!-- LETHAL PACKAGE -->
+      <v-row>
+        <v-col class="ma-3">
+          <v-row>
+            <h1>Lethal Poster settings</h1>
+          </v-row>
+          <v-row>
+            <v-text-field
+                class="path-picker"
+                v-model="formData.lpg.output"
+                :rules="[(path: string) => validatePath(path)]"
+                label="Exported zip path"
+                variant="outlined"
+                clearable
+            >
+              <template v-slot:append>
+                <v-btn @click="openFolder2">Open</v-btn>
+              </template>
+            </v-text-field>
+          </v-row>
+        </v-col>
+      </v-row>
 
-      <v-text-field
-          class="path-picker"
-          v-model="formData.lpg.output"
-          :rules="[(path: string) => validatePath(path)]"
-          label="Exported zip path"
-          variant="outlined"
-          clearable
-      >
-        <template v-slot:append>
-          <v-btn @click="openFolder2">Open</v-btn>
-        </template>
-      </v-text-field>
-
-      <v-btn type="submit"
-             color="primary"
-             block
-             :disabled="settingsStore.isLoading"
-      >
-        Save
-      </v-btn>
+      <!-- SUBMIT -->
+      <v-row>
+        <v-col>
+          <a href="#/" class="text-decoration-none text-white">
+            <v-btn block
+                   :disabled="settingsStore.isLoading"
+            >
+              Cancel
+            </v-btn>
+          </a>
+        </v-col>
+        <v-col>
+          <v-btn type="submit"
+                 color="primary"
+                 block
+                 :disabled="settingsStore.isLoading"
+          >
+            Save
+          </v-btn>
+        </v-col>
+      </v-row>
     </v-form>
   </v-container>
 </template>
-
-<style scoped>
-.path-picker {
-  padding-bottom: 10px;
-}
-</style>
