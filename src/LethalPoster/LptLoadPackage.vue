@@ -2,33 +2,24 @@
 import {computed, onMounted, ref} from "vue";
 import {readDir, watch, remove, copyFile} from '@tauri-apps/plugin-fs';
 import {open, save} from "@tauri-apps/plugin-dialog";
-import {PathData, getPathData, joinPath, filters} from "../utils/fileUtils.ts";
+import {PathData, getPathData, joinPath, filters, isPackage} from "../utils/fileUtils.ts";
 import {invoke} from "@tauri-apps/api/core";
 import {useSettingsStore} from "../stores/settingsStore.ts";
-
-const settingsStore = useSettingsStore();
-const path = computed(() => settingsStore.settings.lpg.output);
-
-onMounted(() => {
-  settingsStore.init();
-});
 
 interface Package extends PathData {
   created: string,
 }
 
-const isOutputFolderSet = computed( () => {
-  const path2 = settingsStore.settings.lpg.output;
-
-  return path2 && path2.length > 0;
-});
-const isModFolderSet = computed( () => {
-  const path1 = settingsStore.settings.global.plugin_path;
-
-  return path1 && path1.length > 0;
-});
+const settingsStore = useSettingsStore();
+const packagePath = computed(() => settingsStore.settings.lpg.output);
 
 const packages = ref<Package[]>([]);
+
+onMounted(() => {
+  settingsStore.init();
+
+  watch(packagePath.value, initDir).then(initDir);
+});
 
 function importPackage() {
   open({
@@ -41,7 +32,7 @@ function importPackage() {
     }
 
     const copies = files.map(getPathData)
-        .map((from) => copyFile(from.path, joinPath(path.value, from.file)));
+        .map((from) => copyFile(from.path, joinPath(packagePath.value, from.file)));
 
     Promise.all(copies).then(initDir);
   });
@@ -63,25 +54,21 @@ function exportPackage(from: PathData) {
 }
 
 function initDir() {
-  readDir(path.value).then((entries) => {
+  readDir(packagePath.value).then((entries) => {
     // Clear
     packages.value = [];
 
     // Populate
-    entries.forEach((entry) => {
-      packages.value.push({
-        ...getPathData(joinPath(path.value, entry.name)),
-        created: '23/02/2030',
-      });
-    });
+    entries
+        .map((entry) => getPathData(joinPath(packagePath.value, entry.name)))
+        .filter(isPackage)
+        .forEach((pkg) => packages.value.push({...pkg, created: '23/02/2030',}));
   });
 }
 
 function deletePackage(path: string) {
   remove(path).then(initDir);
 }
-
-watch(path.value, initDir).then(initDir);
 
 function loadPackage(packageName: string | undefined) {
   if (packageName) {
@@ -102,7 +89,8 @@ function loadPackage(packageName: string | undefined) {
             <v-icon class="ml-1" icon="mdi-folder-download"></v-icon>
           </v-btn>
           <v-spacer></v-spacer>
-          <v-btn variant="tonal" color="secondary" :disabled="!isOutputFolderSet">Open folder in explorer</v-btn>
+          <v-btn variant="tonal" color="secondary" :disabled="!settingsStore.isPackagePathSet">Open folder in explorer
+          </v-btn>
         </v-toolbar>
       </template>
 
@@ -119,7 +107,7 @@ function loadPackage(packageName: string | undefined) {
                        variant="outlined"
                        class="ml-1 mr-5"
                        color="secondary"
-                       :disabled="!isModFolderSet"
+                       :disabled="!settingsStore.isPluginPathSet"
                 >
                   <span>Load</span>
                   <v-icon class="ml-1" icon="mdi-upload-box"></v-icon>
