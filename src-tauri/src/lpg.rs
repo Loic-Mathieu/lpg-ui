@@ -1,6 +1,6 @@
 pub mod crop_tool {
     use image::imageops::FilterType;
-    use image::{DynamicImage, ImageBuffer, ImageFormat, Rgba};
+    use image::{DynamicImage, ImageBuffer, ImageFormat, Rgba, ImageError};
     use std::path::PathBuf;
     use tauri::async_runtime;
     use tauri::async_runtime::JoinHandle;
@@ -36,9 +36,11 @@ pub mod crop_tool {
         pub poster: bool,
         pub painting: bool,
     }
-    pub async fn generate(listed_files: Vec<ListedFile>, output_dir: PathBuf, template_dir: PathBuf) {
+
+    pub async fn generate(listed_files: Vec<ListedFile>, output_dir: PathBuf, template_dir: PathBuf) -> Result<(), String> {
         // Pictures to transform
-        let original_pictures = read_input_pictures(&listed_files);
+        let original_pictures = read_input_pictures(&listed_files)
+            .map_err(|e| format!("{}", e))?;
 
         // Parallel generation
         let mut tasks = Vec::new();
@@ -58,6 +60,8 @@ pub mod crop_tool {
         tasks.push(task);
 
         futures::future::join_all(tasks).await;
+
+        Ok(())
     }
 
     /*  Getters */
@@ -72,14 +76,14 @@ pub mod crop_tool {
         path
     }
 
-    fn read_input_pictures(files: &Vec<ListedFile>) -> Vec<OpenedListedFile> {
-        files
-            .iter()
-            .map(|lf| OpenedListedFile {
-                image: image::open(&lf.path).unwrap(),
-                poster: lf.poster,
-                painting: lf.painting,
-            })
+    fn read_input_pictures(files: &Vec<ListedFile>) -> Result<Vec<OpenedListedFile>, ImageError> {
+        files.iter()
+            .map(|lf| image::open(&lf.path)
+                .map(|img| OpenedListedFile {
+                    image: img,
+                    poster: lf.poster,
+                    painting: lf.painting
+                }))
             .collect()
     }
 
@@ -180,7 +184,7 @@ pub mod package_tool {
     const POSTERS_PATH: &str = "LethalPosters";
     const PAINTINGS_PATH: &str = "LethalPaintings";
 
-    pub async fn create(from_dir: PathBuf, uri: PathBuf, package_name: &str) {
+    pub async fn create(from_dir: PathBuf, uri: PathBuf, package_name: &str) -> Result<(), String> {
         fs::create_dir_all(uri.clone()).unwrap();
         let package = format!("{package_name}.zip");
         let to_path = uri.join(package);
@@ -208,9 +212,11 @@ pub mod package_tool {
         }
 
         zip.finish().unwrap();
+
+        Ok(())
     }
 
-    pub async fn load(uri: PathBuf, package_name: &str, to_dir: PathBuf) {
+    pub async fn load(uri: PathBuf, package_name: &str, to_dir: PathBuf) -> Result<(), String> {
         let package = format!("{package_name}.zip");
         let from_path = uri.join(package);
         println!("Loading from {}", from_path.display());
@@ -232,6 +238,8 @@ pub mod package_tool {
 
             unzip(&out_path, &mut file);
         }
+
+        Ok(())
     }
 
     fn clean_dir(path: &PathBuf) {

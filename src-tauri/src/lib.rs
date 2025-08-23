@@ -40,12 +40,22 @@ async fn generate(app: AppHandle, package_name: String, files: Vec<ListedFile>) 
 
     // Generation
     println!("Generating pictures...");
-    lpg::crop_tool::generate(files, temp_path.clone(), template_dir.clone()).await;
+    let _ = lpg::crop_tool::generate(files, temp_path.clone(), template_dir.clone()).await
+        .map_err(|e| {
+            eprintln!("{}", e);
+            app.emit("loading", false).ok();
+            format!("{}", e)
+        });
     println!("Generation complete !");
 
     // Packaging
     println!("Packaging...");
-    lpg::package_tool::create(temp_path.clone(), output_dir.clone(), &package_name).await;
+    let _ = lpg::package_tool::create(temp_path.clone(), output_dir.clone(), &package_name).await
+        .map_err(|e| {
+            eprintln!("{}", e);
+            app.emit("loading", false).ok();
+            format!("{}", e)
+        });
     println!("Packaging complete !");
 
     println!("Temp file {} should be deleted.", temp_path.display());
@@ -82,7 +92,12 @@ async fn load(app: AppHandle, package_name: String) -> Result<Response> {
     println!("Mount > {}", plugins_dir.display());
 
     println!("Loading package...");
-    lpg::package_tool::load(output_dir, &package_name, plugins_dir).await;
+    let _ = lpg::package_tool::load(output_dir, &package_name, plugins_dir).await
+        .map_err(|e| {
+            eprintln!("{}", e);
+            app.emit("loading", false).ok();
+            format!("{}", e)
+        });
     println!("Package loaded !");
 
     app.emit("loading", false)?;
