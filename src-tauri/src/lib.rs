@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use serde_json::{to_value};
 use tauri::path::BaseDirectory;
-use tauri::{AppHandle, Emitter, Manager, Result};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_store::StoreExt;
 use tempfile::TempDir;
 
@@ -11,7 +11,7 @@ use tempfile::TempDir;
 
 mod lpg;
 
-fn load_resource(handle: &AppHandle, resource: &str) -> Result<PathBuf> {
+fn load_resource(handle: &AppHandle, resource: &str) -> tauri::Result<PathBuf> {
     let path = PathBuf::from("resources").join(resource);
     handle.path().resolve(path, BaseDirectory::Resource)
 }
@@ -21,47 +21,52 @@ struct Response {
     message: String,
 }
 
-#[tauri::command]
-async fn generate(app: AppHandle, package_name: String, files: Vec<ListedFile>) -> Result<Response> {
-    app.emit("loading", true)?;
+fn early_err<E: std::fmt::Display>(app: &AppHandle, msg: String, error: E) -> String {
+    eprintln!("{}", error.to_string());
+    // TODO maybe create log if relevant
+    app.emit("loading", false).ok();
+    app.emit("error", msg.clone()).ok();
+    msg
+}
 
-    // TODO handle dir existence
-    let template_dir = load_resource(&app, TEMPLATE_DIR)?;
-    let temp_dir = TempDir::new()?;
+#[tauri::command]
+async fn generate(app: AppHandle, package_name: String, files: Vec<ListedFile>) -> Result<Response, String> {
+    app.emit("loading", true).ok();
+
+    // Load resources
+    let template_dir = load_resource(&app, TEMPLATE_DIR)
+        .map_err(|e| early_err(&app, "Failed to load template".to_string(), e))?;
+    let temp_dir = TempDir::new()
+        .map_err(|e| early_err(&app, "Failed to create temp dir".to_string(), e))?;
     let temp_path = temp_dir.path().to_owned();
 
     // Load lpg.settings
-    let settings = app.store("settings.json").unwrap();
-    let lpg_value = settings.get("lpg").expect("lpg settings is missing");
-    let lpg_settings: lpg::settings::Settings = serde_json::from_value(lpg_value)?;
-    // TODO validate value
+    let settings = app.store("settings.json")
+        .map_err(|e| early_err(&app, "Failed to open settings".to_string(), e))?;
+    let lpg_value = settings.get("lpg")
+        .ok_or_else(|| early_err(&app, "LPG settings missing".to_string(), ""))?;
+    let lpg_settings: lpg::settings::Settings = serde_json::from_value(lpg_value)
+        .map_err(|e| early_err(&app, "Invalid LPG settings".to_string(), e))?;
     let output_dir = PathBuf::from(lpg_settings.output);
     println!("Mount > {}", output_dir.display());
 
     // Generation
     println!("Generating pictures...");
     let _ = lpg::crop_tool::generate(files, temp_path.clone(), template_dir.clone()).await
-        .map_err(|e| {
-            eprintln!("{}", e);
-            app.emit("loading", false).ok();
-            format!("{}", e)
-        });
+        .map_err(|e| early_err(&app, "Failed to generate pictures".to_string(), e))?;
     println!("Generation complete !");
 
     // Packaging
     println!("Packaging...");
     let _ = lpg::package_tool::create(temp_path.clone(), output_dir.clone(), &package_name).await
-        .map_err(|e| {
-            eprintln!("{}", e);
-            app.emit("loading", false).ok();
-            format!("{}", e)
-        });
+        .map_err(|e| early_err(&app, "Failed to create package".to_string(), e))?;
     println!("Packaging complete !");
 
     println!("Temp file {} should be deleted.", temp_path.display());
-    temp_dir.close()?;
+    temp_dir.close()
+        .map_err(|e| early_err(&app, "Failed to close temp dir=".to_string(), e))?;
 
-    app.emit("loading", false)?;
+    app.emit("loading", false).ok();
     Ok(Response {
         message: format!("Package {} was successfully generated !", package_name),
     })
@@ -73,8 +78,8 @@ pub struct Settings {
 }
 
 #[tauri::command]
-async fn load(app: AppHandle, package_name: String) -> Result<Response> {
-    app.emit("loading", true)?;
+async fn load(app: AppHandle, package_name: String) -> tauri::Result<Response> {
+    app.emit("loading", true).ok();
 
     // Load lpg.settings
     let settings = app.store("settings.json").unwrap();
@@ -100,7 +105,7 @@ async fn load(app: AppHandle, package_name: String) -> Result<Response> {
         });
     println!("Package loaded !");
 
-    app.emit("loading", false)?;
+    app.emit("loading", false).ok();
     Ok(Response {
         message: format!("Package {} was successfully loaded !", package_name),
     })

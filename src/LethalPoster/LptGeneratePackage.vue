@@ -78,6 +78,8 @@ async function submit() {
     await invoke("generate", {
       packageName: formData.value.packageName,
       files: fileList.value
+    }).catch((error) => {
+      console.error(error)
     });
     form.value.resetValidation();
   }
